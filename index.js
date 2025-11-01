@@ -1,4 +1,5 @@
 import { Client, GuildChannel, Message, Partials, User } from "discord.js";
+import express from "express";
 import fs from "fs";
 import cron from "node-cron";
 const token = process.env.CLIENT_SECRET;
@@ -20,7 +21,9 @@ client.once("clientReady", () => {
   console.log(`ログイン完了！Bot名: ${client.user.tag}`);
 });
 
-cron.schedule("0 6 * * *", async () => {
+cron.schedule(
+  "0 6 * * *",
+  async () => {
     if (!fs.existsSync("list.txt")) return;
     let userIds = fs.readFileSync("list.txt", "utf-8").split("\n");
     userIds.forEach(async (id) => {
@@ -53,3 +56,7 @@ client.on("messageCreate", async (message) => {
 });
 
 client.login(token);
+
+const app = express();
+app.get("/", (req, res) => res.send("Bot is running!"));
+app.listen(8000, () => console.log("ok"));
