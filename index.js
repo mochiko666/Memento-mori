@@ -43,12 +43,11 @@ client.once("clientReady", async () => {
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand) return;
   const command = interaction.client.commands.get(interaction.commandName);
-
   if (!command) {
     console.error(`No command matching ${interaction.commandName} was found.`);
     return;
   }
-  
+
   try {
     await command.execute(interaction);
   } catch (error) {
@@ -56,12 +55,12 @@ client.on("interactionCreate", async (interaction) => {
     if (interaction.replied || interaction.deferred) {
       await interaction.followUp({
         content: "There was an error while executing this command!",
-        flags: MessageFlags.Ephemeral,
+        flags: "Ephemeral",
       });
     } else {
       await interaction.reply({
         content: "There was an error while executing this command!",
-        flags: MessageFlags.Ephemeral,
+        flags: "Ephemeral",
       });
     }
   }
@@ -70,7 +69,7 @@ client.on("interactionCreate", async (interaction) => {
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
   // DM
-  if (!message.guild) {
+  if (!message.inGuild()) {
     await mori(message);
     return;
   }
