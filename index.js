@@ -3,11 +3,10 @@ import express from "express";
 import fs from "fs";
 import cron from "node-cron";
 const token = process.env.CLIENT_SECRET;
-const URL = process.env.URL;
 const PORT = process.env.PORT || 8000;
-const app = express();
 const messages = ["Memento mori.", "Remember that you will die.", "お前はいずれ死ぬのだ。それを忘れるな？"];
 
+const app = express();
 app.get("/", (req, res) => res.status(200).json({ status: "ok", message: "still running!" }));
 app.listen(PORT, () => console.log("Listening on port " + PORT));
 
@@ -34,18 +33,6 @@ client.once("clientReady", () => {
     });
   },
   { timezone: "Asia/Tokyo" });
-  setInterval(async () => {
-    try {
-      let res = await fetch(URL);
-      if (!res.ok) {
-        const body = await res.text().catch(() => "<no body>");
-        throw new Error(`HTTP ${res.status} ${res.statusText || ""} - ${body}`);
-      }
-      console.log(`Pinged ${URL}: status: ${res.status}, text: ${res.statusText}`);
-    } catch (e) {
-      console.error(`Error pinging ${URL}:`, e && e.message ? e.message : e);
-    }
-  }, 4 * 60 * 1000);
 });
 
 client.on("messageCreate", async (message) => {
