@@ -3,8 +3,14 @@ import express from "express";
 import fs from "fs";
 import cron from "node-cron";
 const token = process.env.CLIENT_SECRET;
-
+const URL = process.env.URL;
+const PORT = process.env.PORT || 8000;
+const app = express();
 const messages = ["Memento mori.", "Remember that you will die.", "お前はいずれ死ぬのだ。それを忘れるな？"];
+
+app.get("/", (req, res) => res.status(200).json({ status: "ok", message: "still running!" }));
+app.listen(PORT, () => console.log("Listening on port " + PORT));
+
 async function mori(target) {
   let rand = Math.random();
   let message = messages[rand < 0.06 ? 2 : rand < 0.13 ? 1 : 0];
@@ -19,11 +25,7 @@ const client = new Client({
 
 client.once("clientReady", () => {
   console.log(`ログイン完了！Bot名: ${client.user.tag}`);
-});
-
-cron.schedule(
-  "0 6 * * *",
-  async () => {
+  cron.schedule("0 6 * * *", async () => {
     if (!fs.existsSync("list.txt")) return;
     let userIds = fs.readFileSync("list.txt", "utf-8").split("\n");
     userIds.forEach(async (id) => {
@@ -31,8 +33,21 @@ cron.schedule(
       if (user) await mori(user);
     });
   },
-  { timezone: "Asia/Tokyo" }
-);
+  { timezone: "Asia/Tokyo" });
+  setInterval(async () => {
+    try {
+      let res = await fetch(URL);
+      console.log(res);
+      if (!res.ok) {
+        const body = await res.text().catch(() => "<no body>");
+        throw new Error(`HTTP ${res.status} ${res.statusText || ""} - ${body}`);
+      }
+      console.log(`Pinged ${URL}: ${res.status}`);
+    } catch (e) {
+      console.error(`Error pinging ${URL}:`, e && e.message ? e.message : e);
+    }
+  }, 4 * 60 * 1000);
+});
 
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
@@ -56,7 +71,3 @@ client.on("messageCreate", async (message) => {
 });
 
 client.login(token);
-
-const app = express();
-app.get("/", (req, res) => res.send("Bot is running!"));
-app.listen(8000, () => console.log("ok"));
