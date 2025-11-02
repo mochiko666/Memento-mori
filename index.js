@@ -25,7 +25,7 @@ const client = new Client({
 
 client.once("clientReady", () => {
   console.log(`ログイン完了！Bot名: ${client.user.tag}`);
-  cron.schedule("0 6 * * *", async () => {
+  cron.schedule("0 6,18 * * *", async () => {
     if (!fs.existsSync("list.txt")) return;
     let userIds = fs.readFileSync("list.txt", "utf-8").split("\n");
     userIds.forEach(async (id) => {
