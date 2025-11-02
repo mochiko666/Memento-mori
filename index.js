@@ -37,12 +37,11 @@ client.once("clientReady", () => {
   setInterval(async () => {
     try {
       let res = await fetch(URL);
-      console.log(res);
       if (!res.ok) {
         const body = await res.text().catch(() => "<no body>");
         throw new Error(`HTTP ${res.status} ${res.statusText || ""} - ${body}`);
       }
-      console.log(`Pinged ${URL}: ${res.status}`);
+      console.log(`Pinged ${URL}: status: ${res.status}, text: ${res.statusText}`);
     } catch (e) {
       console.error(`Error pinging ${URL}:`, e && e.message ? e.message : e);
     }
