@@ -4,22 +4,35 @@ import { addUserId, mori, readList, removeUserId } from "../utils.js";
 const data = new SlashCommandBuilder()
   .setName("mori")
   .setDescription("get or edit daily mori reminder settings")
-  .addBooleanOption((option) => option.setName("enabled").setDescription("Whether to receive daily reminders."))
-  .addUserOption((option) => option.setName("target").setDescription("The user('s ID) to get or edit. Defaults to yourself."));
+  .addSubcommand((subcommand) =>
+    subcommand
+      .setName("user")
+      .setDescription("get or edit mori reminder settings for a user")
+      .addBooleanOption((option) => option.setName("enabled").setDescription("Whether to receive daily reminders."))
+      .addUserOption((option) => option.setName("target").setDescription("The user('s ID) to get or edit. Defaults to yourself."))
+  )
+  .addSubcommand((subcommand) => subcommand.setName("list").setDescription("get mori reminder list"));
 
 async function execute(interaction) {
   let enabled = interaction.options.getBoolean("enabled");
-  let userId = interaction.options.getUser("target")?.id || interaction.user.id;
-  if (enabled === null || enabled === undefined) {
-    let ids = await readList();
-    let isEnabled = ids.includes(userId);
-    await interaction.reply(`@${interaction.user.username} is ${isEnabled ? "enabled" : "disabled"} for daily mori reminders.`);
-  } else if (enabled) {
-    await interaction.user.send(mori());
-    await addUserId(userId);
-  } else {
-    await interaction.reply("ok i got it");
-    await removeUserId(userId);
+  let user = interaction.options.getUser("target") || interaction.user;
+  let subcommand = interaction.options.getSubcommand();
+  if (user.bot) await interaction.reply("Sorry, but bots cannot be set for daily mori reminders.");
+  else if (subcommand === "user") {
+    if (enabled === null || enabled === undefined) {
+      let ids = await readList();
+      let isEnabled = ids.includes(user.id);
+      await interaction.reply(`@${user.username} is ${isEnabled ? "enabled" : "disabled"} for daily mori reminders.`);
+    } else {
+      await interaction.reply("ok i got it");
+      if (enabled) {
+        await user.send(mori());
+        await addUserId(user.id);
+      } else await removeUserId(user.id);
+    }
+  } else if (subcommand === "list") {
+    let list = await readList();
+    await interaction.reply(list.join("\n") || "No users are set for daily mori reminders.");
   }
 }
 

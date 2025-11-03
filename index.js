@@ -17,11 +17,11 @@ const client = new Client({
   partials: [Partials.Channel],
 });
 client.commands = new Collection();
-const commandsPath = path.join(import.meta.dirname, "commands"); // ../commands
+const commandsPath = path.join(import.meta.dirname, "commands"); // ./commands
 const commandFiles = fs.readdirSync(commandsPath).filter((file) => file.endsWith(".js")); // ["mori.js", ...]
 for (const file of commandFiles) {
-  const filePath = path.join(commandsPath, file); // ../commands/mori.js
-  const command = await import(pathToFileURL(filePath)); // file:///../commands/mori.js
+  const filePath = path.join(commandsPath, file); // ./commands/mori.js
+  const command = await import(pathToFileURL(filePath)); // file:///./commands/mori.js
   if ("data" in command && "execute" in command) client.commands.set(command.data.name, command);
   else console.warn(`The command at ${filePath} is missing a required "data" or "execute" property.`);
 }
