@@ -4,5 +4,9 @@ node_modules
 register-commands.js
 test.js
 .env
+src/
+*.ts
+*.map
 
+tsconfig.json
 list.txt

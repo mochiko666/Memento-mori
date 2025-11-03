@@ -4,18 +4,23 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node --env-file=.env index.js",
+    "test": "node --env-file=.env dist/index.js",
+    "build": "tsc",
     "deploy": "git add . && git commit -m \"deploy: update\" && git push origin master",
-    "register-commands": "node --env-file=.env register-commands.js"
+    "register-commands": "node --env-file=.env src/register-commands.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "module",
   "dependencies": {
-    "discord-api-types": "^0.38.31",
     "discord.js": "^14.24.2",
     "express": "^5.1.0",
     "node-cron": "^4.2.1"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.5",
+    "@types/node": "^24.10.0",
+    "discord-api-types": "^0.38.31"
   }
 }
