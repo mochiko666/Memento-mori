@@ -13,7 +13,7 @@ async function execute(interaction) {
   if (enabled === null || enabled === undefined) {
     let ids = await readList();
     let isEnabled = ids.includes(userId);
-    await interaction.followUp(`@${interaction.user.username} is ${isEnabled ? "enabled" : "disabled"} for daily mori reminders.`);
+    await interaction.reply(`@${interaction.user.username} is ${isEnabled ? "enabled" : "disabled"} for daily mori reminders.`);
   } else if (enabled) {
     await interaction.user.send(mori());
     await addUserId(userId);
