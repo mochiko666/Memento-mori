@@ -1,16 +1,16 @@
 import { Client, Collection, Partials } from "discord.js";
 import express from "express";
-import path from "path";
-import { pathToFileURL } from "url";
 import fs from "fs";
 import cron from "node-cron";
-import { mori } from "./commands/mori.js";
+import path from "path";
+import { pathToFileURL } from "url";
+import { mori, readList } from "./utils.js";
 const token = process.env.CLIENT_SECRET;
 const PORT = process.env.PORT || 8000;
 
 const app = express();
 app.get("/", (req, res) => res.status(200).json({ status: "ok", message: "still running!" }));
-app.listen(PORT, () => console.log("Listening on port " + PORT));
+const server = app.listen(PORT, () => console.log("Listening on port " + PORT));
 
 const client = new Client({
   intents: ["Guilds", "GuildMessages", "DirectMessages", "MessageContent"],
@@ -26,18 +26,20 @@ for (const file of commandFiles) {
   else console.warn(`The command at ${filePath} is missing a required "data" or "execute" property.`);
 }
 
+const schedule = cron.schedule(
+  "0 6,18 * * *",
+  async () => {
+    let userIds = await readList();
+    for (let id of userIds) {
+      let user = await client.users.fetch(id).catch(() => null);
+      if (user) await user.send(mori());
+    }
+  },
+  { timezone: "Asia/Tokyo" }
+);
+
 client.once("clientReady", async () => {
   console.log(`ログイン完了！Bot名: ${client.user.tag}`);
-  cron.schedule("0 6,18 * * *", async () => {
-      if (!fs.existsSync("list.txt")) return;
-      let userIds = fs.readFileSync("list.txt", "utf-8").split("\n");
-      userIds.forEach(async (id) => {
-        let user = await client.users.fetch(id).catch(() => null);
-        if (user) await mori(user);
-      });
-    },
-    { timezone: "Asia/Tokyo" }
-  );
 });
 
 client.on("interactionCreate", async (interaction) => {
@@ -70,9 +72,32 @@ client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
   // DM
   if (!message.inGuild()) {
-    await mori(message);
+    await message.reply(mori());
     return;
   }
 });
 
 client.login(token);
+
+async function shutdown(code = 0) {
+  try {
+    console.log("Shutting down...");
+    if (server)
+      server.close(() => {
+        console.log("HTTP server closed.");
+      });
+    await schedule.destroy();
+    console.log("Cron schedule destroyed.");
+    await client.destroy();
+    console.log("Discord client destroyed.");
+  } catch (error) {
+    console.error("Error during shutdown:", error);
+    code = 1;
+  } finally {
+    console.log("Exiting with code", code);
+    process.exit(code);
+  }
+}
+process.on("shutdown", shutdown);
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);
