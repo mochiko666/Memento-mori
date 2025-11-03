@@ -14,25 +14,29 @@ const data = new SlashCommandBuilder()
   .addSubcommand((subcommand) => subcommand.setName("list").setDescription("get mori reminder list"));
 
 async function execute(interaction) {
-  let enabled = interaction.options.getBoolean("enabled");
-  let user = interaction.options.getUser("target") || interaction.user;
   let subcommand = interaction.options.getSubcommand();
-  if (user.bot) await interaction.reply("Sorry, but bots cannot be set for daily mori reminders.");
-  else if (subcommand === "user") {
-    if (enabled === null || enabled === undefined) {
-      let ids = await readList();
-      let isEnabled = ids.includes(user.id);
-      await interaction.reply(`@${user.username} is ${isEnabled ? "enabled" : "disabled"} for daily mori reminders.`);
-    } else {
-      await interaction.reply("ok i got it");
-      if (enabled) {
-        await user.send(mori());
-        await addUserId(user.id);
-      } else await removeUserId(user.id);
-    }
-  } else if (subcommand === "list") {
-    let list = await readList();
-    await interaction.reply(list.join("\n") || "No users are set for daily mori reminders.");
+  switch (subcommand) {
+    case "user":
+      let user = interaction.options.getUser("target") || interaction.user;
+      let enabled = interaction.options.getBoolean("enabled");
+      if (user.bot) await interaction.reply("Sorry, but bots cannot be set for daily mori reminders.");
+
+      else if (enabled === null || enabled === undefined) {
+        let ids = await readList();
+        let isEnabled = ids.includes(user.id);
+        await interaction.reply(`@${user.username} is ${isEnabled ? "enabled" : "disabled"} for daily mori reminders.`);
+      } else {
+        await interaction.reply("ok i got it");
+        if (enabled) {
+          await user.send(mori());
+          await addUserId(user.id);
+        } else await removeUserId(user.id);
+      }
+      break;
+    case "list":
+      let list = await readList();
+      await interaction.reply(list.join("\n") || "No users are set for daily mori reminders.");
+      break;
   }
 }
 
