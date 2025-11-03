@@ -8,17 +8,19 @@ const data = new SlashCommandBuilder()
   .addUserOption((option) => option.setName("target").setDescription("The user('s ID) to get or edit. Defaults to yourself."));
 
 async function execute(interaction) {
-  await interaction.reply("ok i got it");
   let enabled = interaction.options.getBoolean("enabled");
   let userId = interaction.options.getUser("target")?.id || interaction.user.id;
   if (enabled === null || enabled === undefined) {
     let ids = await readList();
     let isEnabled = ids.includes(userId);
-    await interaction.followUp(`${userId} is ${isEnabled ? "enabled" : "disabled"} for daily mori reminders.`);
+    await interaction.followUp(`@${interaction.user.username} is ${isEnabled ? "enabled" : "disabled"} for daily mori reminders.`);
   } else if (enabled) {
     await interaction.user.send(mori());
     await addUserId(userId);
-  } else await removeUserId(userId);
+  } else {
+    await interaction.reply("ok i got it");
+    await removeUserId(userId);
+  }
 }
 
 export { data, execute };
