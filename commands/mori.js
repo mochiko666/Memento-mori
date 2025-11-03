@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from "discord.js";
-import { addUserId, mori, removeUserId } from "../utils.js";
+import { addUserId, mori, readList, removeUserId } from "../utils.js";
 
 const data = new SlashCommandBuilder()
   .setName("mori")
