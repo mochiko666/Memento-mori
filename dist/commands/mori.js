@@ -25,7 +25,8 @@ async function execute(interaction) {
             else {
                 await interaction.reply("ok i got it");
                 if (enabled) {
-                    await user.send(mori());
+                    if (user.equals(interaction.user))
+                        await user.send(mori());
                     await addUserId(user.id);
                 }
                 else
