@@ -18,7 +18,7 @@ async function execute(interaction) {
     });
     const app = express();
     // 1. 認証URLを表示
-    app.get("/", (req, res) => {
+    app.get("/auth", (req, res) => {
         const scopes = ["playlist-read-private", "user-read-private", "user-library-read", "user-top-read"];
         const authorizeURL = spotifyApi.createAuthorizeURL(scopes, "state123");
         res.redirect(authorizeURL);
