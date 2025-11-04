@@ -67,7 +67,7 @@ async function execute(interaction) {
         }
     });
     const server = app.listen(8888, async () => {
-        await interaction.editReply("Authenticate [here](http://127.0.0.1:8888)");
+        await interaction.editReply(`Authenticate [here](${process.env.SPOTIFY_REDIRECT_URI})`);
     });
     setTimeout(() => {
         server.close();
