@@ -1,6 +1,6 @@
 import { EmbedBuilder, SlashCommandBuilder } from "discord.js";
-import express from "express";
 import SpotifyWebApi from "spotify-web-api-node";
+import { app } from "../index.js";
 const data = new SlashCommandBuilder()
     .setName("spotify")
     .setDescription("Fetch your top Spotify tracks. Need to authorize first.")
@@ -16,7 +16,6 @@ async function execute(interaction) {
         clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
         redirectUri: process.env.SPOTIFY_REDIRECT_URI,
     });
-    const app = express();
     // 1. 認証URLを表示
     app.get("/auth", (req, res) => {
         const scopes = ["playlist-read-private", "user-read-private", "user-library-read", "user-top-read"];
@@ -66,7 +65,7 @@ async function execute(interaction) {
             server.close();
         }
     });
-    const server = app.listen(process.env.SPOTIFY_AUTH_PORT, async () => {
+    const server = app.listen(process.env.PORT, async () => {
         await interaction.editReply(`Authenticate [here](${process.env.SPOTIFY_AUTH_URL})`);
     });
     setTimeout(() => {

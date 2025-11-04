@@ -7,7 +7,7 @@ import { pathToFileURL } from "url";
 import { mori, readList } from "./utils.js";
 const token = process.env.CLIENT_SECRET;
 const PORT = process.env.PORT || 8000;
-const app = express();
+export const app = express();
 app.get("/", (req, res) => res.status(200).json({ status: "ok", message: "still running!" }));
 const server = app.listen(PORT, () => console.log("Listening on port " + PORT));
 const client = new Client({
