@@ -66,7 +66,7 @@ async function execute(interaction) {
             server.close();
         }
     });
-    const server = app.listen(8888, async () => {
+    const server = app.listen(process.env.PORT, async () => {
         await interaction.editReply(`Authenticate [here](${process.env.SPOTIFY_REDIRECT_URI})`);
     });
     setTimeout(() => {
