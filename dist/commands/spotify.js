@@ -18,10 +18,10 @@ async function execute(interaction) {
     });
     const app = express();
     // 1. 認証URLを表示
-    app.get("/", (req, res) => {
+    app.get("/auth", (req, res) => {
         const scopes = ["playlist-read-private", "user-read-private", "user-library-read", "user-top-read"];
         const authorizeURL = spotifyApi.createAuthorizeURL(scopes, "state123");
-        res.send(`<a href="${authorizeURL}">Spotify認証へ</a>`);
+        res.redirect(authorizeURL);
     });
     // 2. 認証後のコールバック
     app.get("/callback", async (req, res) => {
@@ -34,7 +34,7 @@ async function execute(interaction) {
             let { body } = await spotifyApi.authorizationCodeGrant(code);
             spotifyApi.setAccessToken(body.access_token);
             spotifyApi.setRefreshToken(body.refresh_token);
-            res.send("done");
+            res.send("<script>window.close()</script>");
             let { items } = (await spotifyApi.getMyTopTracks({ time_range: time_range, limit: 4 })).body;
             let tracks = items.map((track) => ({
                 title: track.name,
@@ -66,8 +66,8 @@ async function execute(interaction) {
             server.close();
         }
     });
-    const server = app.listen(process.env.PORT, async () => {
-        await interaction.editReply(`Authenticate [here](${process.env.SPOTIFY_REDIRECT_URI})`);
+    const server = app.listen(process.env.SPOTIFY_AUTH_PORT, async () => {
+        await interaction.editReply(`Authenticate [here](${process.env.SPOTIFY_AUTH_URL})`);
     });
     setTimeout(() => {
         server.close();
