@@ -1,7 +1,12 @@
+import {} from "discord.js";
 import { promises as fs } from "fs";
 import path from "path";
-const LIST_PATH = path.join(import.meta.dirname, "list.txt");
-const messages = ["Memento mori.", "Remember that you will die.", "お前はいずれ死ぬのだ。それを忘れるな？"];
+const listPath = path.join(process.cwd(), "list.txt");
+const messages = [
+    "Memento mori.",
+    "Remember that you will die.",
+    "お前はいずれ死ぬのだ。それを忘れるな？",
+];
 function mori() {
     let rand = Math.random();
     let message = messages[rand < 0.06 ? 2 : rand < 0.13 ? 1 : 0];
@@ -9,8 +14,11 @@ function mori() {
 }
 async function readList() {
     try {
-        const raw = await fs.readFile(LIST_PATH, "utf-8"); // 123456789\n987654321
-        return raw.split("\n").map((s) => s.trim()).filter(Boolean); // ["123456789", "987654321"]
+        const raw = await fs.readFile(listPath, "utf-8"); // 123456789\n987654321
+        return raw
+            .split("\n")
+            .map((s) => s.trim())
+            .filter(Boolean); // ["123456789", "987654321"]
     }
     catch (e) {
         if (e?.code === "ENOENT")
@@ -20,7 +28,7 @@ async function readList() {
 }
 async function saveList(ids) {
     const uniq = Array.from(new Set(ids.map((s) => s.trim()).filter(Boolean))); // remove duplicates and empty strings
-    await fs.writeFile(LIST_PATH, uniq.join("\n"), "utf-8"); // "123456789\n987654321"
+    await fs.writeFile(listPath, uniq.join("\n"), "utf-8"); // "123456789\n987654321"
 }
 async function addUserId(id) {
     const ids = await readList();
@@ -34,5 +42,12 @@ async function removeUserId(id) {
     const filtered = ids.filter((x) => x !== id);
     await saveList(filtered);
 }
-export { mori, readList, saveList, addUserId, removeUserId };
-//# sourceMappingURL=utils.js.map
+const moriUtils = {
+    mori,
+    read: readList,
+    save: saveList,
+    add: addUserId,
+    remove: removeUserId,
+};
+export { addUserId, mori, moriUtils, readList, removeUserId, saveList, };
+//# sourceMappingURL=mori.js.map

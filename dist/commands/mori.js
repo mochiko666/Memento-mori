@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from "discord.js";
-import { addUserId, mori, readList, removeUserId } from "../utils.js";
+import { addUserId, mori, readList, removeUserId } from "../utils/mori.js";
 const data = new SlashCommandBuilder()
     .setName("mori")
     .setDescription("get or edit daily mori reminder settings")
@@ -7,7 +7,9 @@ const data = new SlashCommandBuilder()
     .setName("user")
     .setDescription("get or edit mori reminder settings for a user")
     .addBooleanOption((option) => option.setName("enabled").setDescription("Whether to receive daily reminders."))
-    .addUserOption((option) => option.setName("target").setDescription("The user('s ID) to get or edit. Defaults to yourself.")))
+    .addUserOption((option) => option
+    .setName("target")
+    .setDescription("The user('s ID) to get or edit. Defaults to yourself.")))
     .addSubcommand((subcommand) => subcommand.setName("list").setDescription("get mori reminder list"));
 async function execute(interaction) {
     let subcommand = interaction.options.getSubcommand();

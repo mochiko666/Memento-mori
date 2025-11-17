@@ -1,8 +1,7 @@
-# node / npm
 node_modules
 package-lock.json
 .git
 .gitignore
-# 環境・設定ファイル（機密）
+
 .env
 list.txt

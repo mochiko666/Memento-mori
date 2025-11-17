@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from "discord.js";
-import { mori } from "../utils.js";
+import { mori } from "../utils/mori.js";
 const data = new SlashCommandBuilder()
     .setName("greeting")
     .setDescription("HI")

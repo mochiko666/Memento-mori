@@ -2,7 +2,7 @@
 node_modules
 
 register-commands.js
-test.js
+test.*
 .env
 src/
 *.ts
@@ -10,3 +10,4 @@ src/
 
 tsconfig.json
 list.txt
+tokens.json

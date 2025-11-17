@@ -1,18 +1,58 @@
-import { Client, Collection, Partials } from "discord.js";
+import { Client, Collection, GatewayIntentBits, Partials } from "discord.js";
 import express from "express";
 import fs from "fs";
 import cron from "node-cron";
 import path from "path";
+import SpotifyWebApi from "spotify-web-api-node";
 import { pathToFileURL } from "url";
-import { mori, readList } from "./utils.js";
-const token = process.env.CLIENT_SECRET;
-const PORT = process.env.PORT || 8000;
-export const app = express();
-app.get("/", (req, res) => res.status(200).json({ status: "ok", message: "still running!" }));
+import { moriUtils } from "./utils/mori.js";
+import { parseState, setToken } from "./utils/token.js";
+const { TOKEN, PORT, SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, SPOTIFY_REDIRECT_URI } = process.env;
+const spotifyApi = new SpotifyWebApi({
+    clientId: SPOTIFY_CLIENT_ID,
+    clientSecret: SPOTIFY_CLIENT_SECRET,
+    redirectUri: SPOTIFY_REDIRECT_URI,
+});
+const stateMap = new Map();
+export { spotifyApi, stateMap };
+const app = express();
+app.get("/", async (req, res) => {
+    const { code, state } = req.query;
+    if (code && state && typeof code === "string" && typeof state === "string")
+        try {
+            let payload = parseState(state);
+            if (!payload)
+                return res.status(200).json({ status: "error", message: "Invalid state format" });
+            let { user_id, url_state } = payload;
+            let authorizeData = stateMap.get(user_id);
+            if (!authorizeData)
+                throw new Error(user_id + " is not set on stateMap.");
+            let { channel_id, saved_state } = authorizeData;
+            if (url_state !== saved_state)
+                return res.status(401).json({ status: "error", message: "Invalid state" });
+            let data = await spotifyApi.authorizationCodeGrant(code);
+            await setToken(user_id, data.body);
+            stateMap.delete(user_id);
+            res.send("<script>window.close()</script>");
+            let user = client.users.cache.get(user_id);
+            let channel = client.channels.cache.get(channel_id);
+            if (!user || !channel || !("send" in channel))
+                return;
+            await channel.send(`Successfully authorized, ${user.toString()}`);
+            return;
+        }
+        catch (error) {
+            console.error("Error getting Tokens:", error);
+            return res.status(500).send("An Error Occured.");
+        }
+    return res.status(200).json({ status: "ok", message: "still running!" });
+});
 const server = app.listen(PORT, () => console.log("Listening on port " + PORT));
+const { Guilds, GuildMessages, DirectMessages, MessageContent } = GatewayIntentBits;
+const { Channel, Message } = Partials;
 const client = new Client({
-    intents: ["Guilds", "GuildMessages", "DirectMessages", "MessageContent"],
-    partials: [Partials.Channel],
+    intents: [Guilds, GuildMessages, DirectMessages, MessageContent],
+    partials: [Channel, Message],
 });
 client.commands = new Collection();
 const commandsPath = path.join(import.meta.dirname, "commands"); // ./commands
@@ -24,29 +64,26 @@ for (const file of commandFiles) {
         client.commands.set(command.data.name, command);
     else
         console.warn(`The command at ${filePath} is missing a required "data" or "execute" property.`);
+    console.log("Successfully loaded:", command.data.name);
 }
 const schedule = cron.schedule("0 6,18 * * *", async () => {
-    let userIds = await readList();
+    let userIds = await moriUtils.read();
     for (let id of userIds) {
         let user = await client.users.fetch(id).catch(() => null);
         if (user)
-            await user.send(mori());
+            await user.send(moriUtils.mori());
     }
 }, { timezone: "Asia/Tokyo" });
 client.once("clientReady", async () => {
-    console.log(`ログイン完了！Bot名: ${client.user?.tag}`);
+    console.log(`Logged in as: ${client.user?.tag}`);
 });
 client.on("interactionCreate", async (interaction) => {
     if (!interaction.isChatInputCommand())
         return;
     let client = interaction.client;
     let command = client.commands.get(interaction.commandName);
-    if (!command) {
-        console.error(`No command matching ${interaction.commandName} was found.`);
-        return;
-    }
     try {
-        await command.execute(interaction);
+        await command?.execute(interaction);
     }
     catch (error) {
         console.error(error);
@@ -69,11 +106,11 @@ client.on("messageCreate", async (message) => {
         return;
     // DM
     if (!message.inGuild()) {
-        await message.reply(mori());
+        await message.reply(moriUtils.mori());
         return;
     }
 });
-client.login(token);
+client.login(TOKEN);
 async function shutdown(code = 0) {
     try {
         console.log("Shutting down...");
