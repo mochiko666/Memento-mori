@@ -15,7 +15,7 @@ const data = new SlashCommandBuilder()
     .setDescription("Authorize the permission to access your spotify account."))
     .addSubcommand((subcommand) => subcommand
     .setName("deauthorize")
-    .setDescription("Deauthorize the permission to access your spotify account."));
+    .setDescription("Revoke the authorization to access your spotify account."));
 async function execute(interaction) {
     let subcommand = interaction.options.getSubcommand();
     let { id } = interaction.user;
