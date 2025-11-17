@@ -50,10 +50,13 @@ async function isValidById(userId) {
     let { expires_in } = data;
     return Date.now() < expires_in;
 }
+/**
+ * Decodes base64url buffered text to {@link SpotifyStatePayload}.
+ */
 function parseState(state) {
     try {
-        const jsonStr = Buffer.from(state, "base64url").toString();
-        const data = JSON.parse(jsonStr);
+        const json = Buffer.from(state, "base64url").toString();
+        const data = JSON.parse(json);
         if (typeof data.user_id === "string" && typeof data.url_state === "string") {
             return data;
         }
@@ -103,7 +106,7 @@ class TokensFileWrapper {
         return true;
     }
     /**
-     * Deletes user token data from the token file.
+     * Deletes the user's token data from the token file.
      * @returns true if the user id in the cache existed and has been removed, or false if the user id does not exist.
      */
     async delete(userId) {
@@ -138,8 +141,8 @@ class UserTokenDataWrapper {
         await this.file.delete(this.userId);
     }
     /**
-     * Refreshes access token if expired. if set is true, token will be set on spotify api wrapper.
-     * @returns access token if access token valid or successfully refreshed, undefined if failed to refresh access token.
+     * Refreshes access token if expired. if set is true, access token will be set on {@link SpotifyWebApi}.
+     * @returns access token if valid or successfully refreshed, undefined if failed to refresh access token.
      */
     async refreshAccessToken(spotifyApi, set = false) {
         let token;
@@ -182,9 +185,6 @@ class UserTokenDataWrapper {
         this.data.expires_in = timestamp;
         await this.file.save();
     }
-    /**
-     * Updates several token properties.
-     */
     async set(data) {
         Object.assign(this.data, data);
         await this.file.save();
