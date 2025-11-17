@@ -33,20 +33,12 @@ app.get("/", async (req, res) => {
             let data = await spotifyApi.authorizationCodeGrant(code);
             await setToken(user_id, data.body);
             stateMap.delete(user_id);
+            res.send(`<script>window.close();</script>`);
             let user = client.users.cache.get(user_id);
             let channel = client.channels.cache.get(channel_id);
             if (!user || !channel || !("send" in channel))
                 return;
             await channel.send(`Successfully authorized, ${user.toString()}`);
-            const ua = req.headers["user-agent"]?.toLowerCase() ?? "";
-            const isMobile = ua.includes("iphone") ||
-                ua.includes("ipad") ||
-                ua.includes("android") ||
-                ua.includes("mobile");
-            if (isMobile)
-                res.redirect(channel.url);
-            else
-                res.send(`<script>window.close();</script>`);
             return;
         }
         catch (error) {
