@@ -18,7 +18,7 @@ export { spotifyApi, stateMap };
 const app = express();
 app.get("/", async (req, res) => {
     const { code, state } = req.query;
-    if (code && state && typeof code === "string" && typeof state === "string")
+    if (typeof code === "string" && typeof state === "string")
         try {
             let payload = parseState(state);
             if (!payload)

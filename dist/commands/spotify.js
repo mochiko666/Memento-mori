@@ -15,7 +15,10 @@ const data = new SlashCommandBuilder()
     .setDescription("Authorize the permission to access your spotify account."))
     .addSubcommand((subcommand) => subcommand
     .setName("deauthorize")
-    .setDescription("Revoke the authorization to access your spotify account."));
+    .setDescription("Revoke the authorization to access your spotify account."))
+    .addSubcommand((subcommand) => subcommand
+    .setName("list")
+    .setDescription("Show the list of users' ids whose token is registered."));
 async function execute(interaction) {
     let subcommand = interaction.options.getSubcommand();
     let { id } = interaction.user;
@@ -82,12 +85,16 @@ async function execute(interaction) {
             break;
         }
         case "deauthorize": {
-            let { id } = interaction.user;
             let result = await tokenFile.delete(id);
             await interaction.reply({
                 content: result ? "Authorization successfully revoked." : "You have not authorized yet.",
                 flags: "Ephemeral",
             });
+            break;
+        }
+        case "list": {
+            let ids = [...tokenFile.cache.keys()]; // ["1234567890", "0987654321"]
+            await interaction.reply(ids.map((id) => "@" + id).join("\n")); // @1234567890\n@0987654321
             break;
         }
     }

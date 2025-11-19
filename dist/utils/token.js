@@ -41,7 +41,8 @@ async function deleteToken(userId) {
 const isValid = (data) => Date.now() < data.expires_in;
 /**
  * Checks if the token is valid by user id.
- * @returns true if valid, false if invalid or the user's token data does not exist.
+ * @returns A promise that if successful, returns boolean
+ *          indicating whether the user's token exists and is valid or not.
  */
 async function isValidById(userId) {
     let data = await getToken(userId);
@@ -77,9 +78,8 @@ class TokensFileWrapper {
     filePath;
     constructor(tokenFile, filePath = tokensPath) {
         this.filePath = filePath;
-        for (const [userId, data] of Object.entries(tokenFile)) {
+        for (const [userId, data] of Object.entries(tokenFile))
             this.set(userId, data);
-        }
     }
     __cache = new Map();
     get cache() {
@@ -91,12 +91,11 @@ class TokensFileWrapper {
         await fs.writeFile(tmpPath, JSON.stringify(tokenFile, null, 2));
         await fs.rename(tmpPath, this.filePath);
     }
-    set(userId, data) {
-        this.__cache.set(userId, new UserTokenDataWrapper(userId, data, this));
-    }
+    set = (userId, data) => this.__cache.set(userId, new UserTokenDataWrapper(userId, data, this));
     /**
      * Adds user token data to the token file.
-     * @returns true if success, or false if the user id already existed in the cache.
+     * @returns A promise that if successful, returns true.
+     *          if the user id already existed in the cache, returns false.
      */
     async add(userId, data) {
         if (this.__cache.has(userId))
@@ -107,7 +106,8 @@ class TokensFileWrapper {
     }
     /**
      * Deletes the user's token data from the token file.
-     * @returns true if the user id in the cache existed and has been removed, or false if the user id does not exist.
+     * @returns true if the user id in the cache existed and has been removed,
+     *          or false if the user id does not exist.
      */
     async delete(userId) {
         const existed = this.__cache.delete(userId);
@@ -137,12 +137,29 @@ class UserTokenDataWrapper {
     get data() {
         return this.tokenData;
     }
-    async delete() {
-        await this.file.delete(this.userId);
+    async setAccessToken(access_token) {
+        this.data.access_token = access_token;
+        await this.file.save();
     }
+    async setRefreshToken(refresh_token) {
+        this.data.refresh_token = refresh_token;
+        await this.file.save();
+    }
+    async setExpiresIn(timestamp) {
+        this.data.expires_in = timestamp;
+        await this.file.save();
+    }
+    async set(data) {
+        Object.assign(this.data, data);
+        await this.file.save();
+    }
+    delete = async () => await this.file.delete(this.userId);
     /**
-     * Refreshes access token if expired. if set is true, access token will be set on {@link SpotifyWebApi}.
-     * @returns access token if valid or successfully refreshed, undefined if failed to refresh access token.
+     * Refreshes the access token if expired.
+     * @param spotifyApi {@link SpotifyWebApi}.
+     * @param set Whether to set the access token to spotifyApi. Default is false.
+     * @returns A promise that if successful, resolves to the new access token.
+     *          If the promise rejected, undefined if failed to refresh the access token.
      */
     async refreshAccessToken(spotifyApi, set = false) {
         let token;
@@ -169,25 +186,9 @@ class UserTokenDataWrapper {
             catch {
                 return;
             }
-        if (set)
+        if (set && !spotifyApi.getAccessToken())
             spotifyApi.setAccessToken(token);
         return token;
-    }
-    async setAccessToken(access_token) {
-        this.data.access_token = access_token;
-        await this.file.save();
-    }
-    async setRefreshToken(refresh_token) {
-        this.data.refresh_token = refresh_token;
-        await this.file.save();
-    }
-    async setExpiresIn(timestamp) {
-        this.data.expires_in = timestamp;
-        await this.file.save();
-    }
-    async set(data) {
-        Object.assign(this.data, data);
-        await this.file.save();
     }
     isValid = () => Date.now() < this.expires_in - 666; //subtract 666ms from expiration time for safety
 }
