@@ -94,7 +94,7 @@ async function execute(interaction) {
         }
         case "list": {
             let ids = [...tokenFile.cache.keys()]; // ["1234567890", "0987654321"]
-            await interaction.reply(ids.map((id) => "@" + id).join("\n")); // @1234567890\n@0987654321
+            await interaction.reply(ids.map((id) => "@" + id).join("\n") || "No users authorized yet."); // @1234567890\n@0987654321
             break;
         }
     }
