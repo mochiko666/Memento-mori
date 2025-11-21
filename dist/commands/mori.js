@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from "discord.js";
-import { addUserId, mori, readList, removeUserId } from "../utils/mori.js";
+import { memento } from "../utils/mori.js";
 const data = new SlashCommandBuilder()
     .setName("mori")
     .setDescription("Get or edit daily mori reminder settings")
@@ -13,6 +13,7 @@ const data = new SlashCommandBuilder()
     .addSubcommand((subcommand) => subcommand.setName("list").setDescription("Get mori reminder list"));
 async function execute(interaction) {
     let subcommand = interaction.options.getSubcommand();
+    let { moriUsers } = await import("../index.js");
     switch (subcommand) {
         case "user":
             let user = interaction.options.getUser("target") || interaction.user;
@@ -20,24 +21,22 @@ async function execute(interaction) {
             if (user.bot)
                 await interaction.reply("Sorry, but bots cannot be set for daily mori reminders.");
             else if (enabled === null || enabled === undefined) {
-                let ids = await readList();
-                let isEnabled = ids.includes(user.id);
+                let isEnabled = moriUsers.has(user.id);
                 await interaction.reply(`@${user.username} is ${isEnabled ? "enabled" : "disabled"} for daily mori reminders.`);
             }
             else {
                 await interaction.reply("ok i got it");
                 if (enabled) {
                     if (user.equals(interaction.user))
-                        await user.send(mori());
-                    await addUserId(user.id);
+                        await user.send(memento());
+                    await moriUsers.add(user.id);
                 }
                 else
-                    await removeUserId(user.id);
+                    await moriUsers.remove(user.id);
             }
             break;
         case "list":
-            let list = await readList();
-            await interaction.reply(list.map((id) => "@" + id).join("\n") || "No users are set for daily mori reminders."); // @1234567890\n@0987654321
+            await interaction.reply(moriUsers.ids.map((id) => "@" + id).join("\n") || "No users are set for daily mori reminders."); // @1234567890\n@0987654321
             break;
     }
 }

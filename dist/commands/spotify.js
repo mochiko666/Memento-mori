@@ -1,5 +1,4 @@
 import { EmbedBuilder, SlashCommandBuilder } from "discord.js";
-import { readTokens } from "../utils/token.js";
 const data = new SlashCommandBuilder()
     .setName("spotify")
     .setDescription("Get your spotify info.")
@@ -22,8 +21,7 @@ const data = new SlashCommandBuilder()
 async function execute(interaction) {
     let subcommand = interaction.options.getSubcommand();
     let { id } = interaction.user;
-    let { spotifyApi, stateMap } = await import("../index.js"); //dynamic import in order to aviod co-import
-    let tokenFile = await readTokens(true);
+    let { spotifyApi, stateMap, tokenFile } = await import("../index.js"); //dynamic import in order to aviod co-import
     switch (subcommand) {
         case "mytop": {
             let tokenData = tokenFile.cache.get(id);

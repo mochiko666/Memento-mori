@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from "discord.js";
-import { mori } from "../utils/mori.js";
+import { memento } from "../utils/mori.js";
 const data = new SlashCommandBuilder()
     .setName("greeting")
     .setDescription("HI")
@@ -24,7 +24,7 @@ const replyMap = {
 async function execute(interaction) {
     let message = interaction.options.getString("message", true);
     let rare = Math.random() > 0.966; // ~3.4% chance
-    await interaction.reply(rare ? replyMap[message] : mori());
+    await interaction.reply(rare ? replyMap[message] : memento());
 }
 export { data, execute };
 //# sourceMappingURL=greeting.js.map

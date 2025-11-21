@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from "discord.js";
-import { mori } from "../utils/mori.js";
+import { memento } from "../utils/mori.js";
 const data = new SlashCommandBuilder()
     .setName("spam")
     .setDescription("Spam Memento mori messages to a user")
@@ -18,7 +18,7 @@ async function execute(interaction) {
     }
     await interaction.reply(`Sending ${count} mori messages to @${target.username}...`);
     for (let i = 0; i < count; i++) {
-        await target.send(mori());
+        await target.send(memento());
     }
 }
 export { data, execute };

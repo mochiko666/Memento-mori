@@ -5,8 +5,8 @@ import cron from "node-cron";
 import path from "path";
 import SpotifyWebApi from "spotify-web-api-node";
 import { pathToFileURL } from "url";
-import { moriUtils } from "./utils/mori.js";
-import { parseState, setToken } from "./utils/token.js";
+import { IDManager, memento } from "./utils/mori.js";
+import { parseState, readTokens } from "./utils/token.js";
 const { TOKEN, PORT, SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, SPOTIFY_REDIRECT_URI } = process.env;
 const spotifyApi = new SpotifyWebApi({
     clientId: SPOTIFY_CLIENT_ID,
@@ -14,8 +14,13 @@ const spotifyApi = new SpotifyWebApi({
     redirectUri: SPOTIFY_REDIRECT_URI,
 });
 const stateMap = new Map();
-const scheduleMap = new Map();
-export { scheduleMap, spotifyApi, stateMap };
+const scheduleMap = {};
+const tokenFile = await readTokens(true);
+const moriUsers = new IDManager();
+const wikiChannels = new IDManager(path.join(process.cwd(), "wikipedia_channels.txt"));
+moriUsers.load();
+wikiChannels.load();
+export { moriUsers, spotifyApi, stateMap, tokenFile, wikiChannels };
 const app = express();
 app.get("/", async (req, res) => {
     const { code, state } = req.query;
@@ -32,7 +37,7 @@ app.get("/", async (req, res) => {
             if (url_state !== saved_state)
                 return res.status(401).json({ status: "error", message: "Invalid state" });
             let data = await spotifyApi.authorizationCodeGrant(code);
-            await setToken(user_id, data.body);
+            await tokenFile.add(user_id, data.body);
             stateMap.delete(user_id);
             res.send(`<script>window.close();</script>`);
             let user = client.users.cache.get(user_id);
@@ -67,14 +72,28 @@ for (const file of commandFiles) {
         console.warn(`The command at ${filePath} is missing a required "data" or "execute" property.`);
     console.log("Successfully loaded:", command.data.name);
 }
-scheduleMap.set("mori", cron.schedule("0 6,18 * * *", async () => {
-    let userIds = await moriUtils.read();
-    for (let id of userIds) {
-        let user = await client.users.fetch(id).catch(() => null);
-        if (user)
-            await user.send(moriUtils.mori());
+scheduleMap.mori = cron.schedule("0 6,18 * * *", async () => {
+    let { ids } = moriUsers;
+    for (let id of ids) {
+        let user = await client.users.fetch(id).catch(() => undefined);
+        if (!user) {
+            console.error("Failed to get channel with id:", id);
+            continue;
+        }
+        await user.send(memento());
     }
-}, { timezone: "Asia/Tokyo" }));
+}, { timezone: "Asia/Tokyo" });
+scheduleMap.wikipedia = cron.schedule("0 20 * * *", async () => {
+    let { ids } = wikiChannels;
+    for (let id of ids) {
+        let channel = await client.channels.fetch(id).catch(() => undefined);
+        if (!channel || !("send" in channel)) {
+            console.error("Failed to get channel with id:", id);
+            continue;
+        }
+        await channel.send(memento());
+    }
+}, { timezone: "Asia/Tokyo" });
 client.once("clientReady", async () => {
     console.log(`Logged in as: ${client.user?.tag}`);
 });
@@ -107,7 +126,7 @@ client.on("messageCreate", async (message) => {
         return;
     // DM
     if (!message.inGuild()) {
-        await message.reply(moriUtils.mori());
+        await message.reply(memento());
         return;
     }
 });
@@ -119,7 +138,7 @@ async function shutdown(code = 0) {
             server.close(() => {
                 console.log("HTTP server closed.");
             });
-        for (const schedule of scheduleMap.values())
+        for (const schedule of Object.values(scheduleMap))
             await schedule.destroy();
         console.log("Cron schedule destroyed.");
         if (client)
