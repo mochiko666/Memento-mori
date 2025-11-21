@@ -14,7 +14,8 @@ const spotifyApi = new SpotifyWebApi({
     redirectUri: SPOTIFY_REDIRECT_URI,
 });
 const stateMap = new Map();
-export { spotifyApi, stateMap };
+const scheduleMap = new Map();
+export { scheduleMap, spotifyApi, stateMap };
 const app = express();
 app.get("/", async (req, res) => {
     const { code, state } = req.query;
@@ -118,9 +119,11 @@ async function shutdown(code = 0) {
             server.close(() => {
                 console.log("HTTP server closed.");
             });
-        await schedule.destroy();
+        for (const schedule of scheduleMap.values())
+            await schedule.destroy();
         console.log("Cron schedule destroyed.");
-        await client.destroy();
+        if (client)
+            await client.destroy();
         console.log("Discord client destroyed.");
     }
     catch (error) {
