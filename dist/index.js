@@ -67,14 +67,14 @@ for (const file of commandFiles) {
         console.warn(`The command at ${filePath} is missing a required "data" or "execute" property.`);
     console.log("Successfully loaded:", command.data.name);
 }
-const schedule = cron.schedule("0 6,18 * * *", async () => {
+scheduleMap.set("mori", cron.schedule("0 6,18 * * *", async () => {
     let userIds = await moriUtils.read();
     for (let id of userIds) {
         let user = await client.users.fetch(id).catch(() => null);
         if (user)
             await user.send(moriUtils.mori());
     }
-}, { timezone: "Asia/Tokyo" });
+}, { timezone: "Asia/Tokyo" }));
 client.once("clientReady", async () => {
     console.log(`Logged in as: ${client.user?.tag}`);
 });
