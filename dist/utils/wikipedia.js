@@ -8,6 +8,7 @@ async function getRandomArticle(limit = 1) {
     url.searchParams.set("action", "query");
     url.searchParams.set("list", "random");
     url.searchParams.set("rnlimit", limit.toString());
+    url.searchParams.set("rnnamespace", "0");
     url.searchParams.set("format", "json");
     try {
         const res = await fetch(url.href);

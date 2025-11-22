@@ -7,6 +7,7 @@ import SpotifyWebApi from "spotify-web-api-node";
 import { pathToFileURL } from "url";
 import { IDManager, memento } from "./utils/mori.js";
 import { parseState, readTokens } from "./utils/token.js";
+import { getRandomArticle } from "./utils/wikipedia.js";
 const { TOKEN, PORT, SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, SPOTIFY_REDIRECT_URI } = process.env;
 const spotifyApi = new SpotifyWebApi({
     clientId: SPOTIFY_CLIENT_ID,
@@ -14,46 +15,43 @@ const spotifyApi = new SpotifyWebApi({
     redirectUri: SPOTIFY_REDIRECT_URI,
 });
 const stateMap = new Map();
-const scheduleMap = {};
 const tokenFile = await readTokens(true);
 const moriUsers = new IDManager();
 const wikiChannels = new IDManager(path.join(process.cwd(), "wikipedia_channels.txt"));
 moriUsers.load();
 wikiChannels.load();
 export { moriUsers, spotifyApi, stateMap, tokenFile, wikiChannels };
-const app = express();
-app.get("/", async (req, res) => {
-    const { code, state } = req.query;
-    if (typeof code === "string" && typeof state === "string")
-        try {
-            let payload = parseState(state);
-            if (!payload)
-                return res.status(200).json({ status: "error", message: "Invalid state format" });
-            let { user_id, url_state } = payload;
-            let authorizeData = stateMap.get(user_id);
-            if (!authorizeData)
-                throw new Error(user_id + " is not set on stateMap.");
-            let { channel_id, saved_state } = authorizeData;
-            if (url_state !== saved_state)
-                return res.status(401).json({ status: "error", message: "Invalid state" });
-            let data = await spotifyApi.authorizationCodeGrant(code);
-            await tokenFile.add(user_id, data.body);
-            stateMap.delete(user_id);
-            res.send(`<script>window.close();</script>`);
-            let user = client.users.cache.get(user_id);
-            let channel = client.channels.cache.get(channel_id);
-            if (!user || !channel || !("send" in channel))
-                return;
-            await channel.send(`Successfully authorized, ${user.toString()}`);
-            return;
+const scheduleMap = {
+    //memento mori reminder
+    mori: cron.schedule("0 6,18 * * *", async () => {
+        let { ids } = moriUsers;
+        for (let id of ids) {
+            let user = await client.users.fetch(id).catch(() => undefined);
+            if (!user) {
+                console.error("Failed to get user with id:", id);
+                continue;
+            }
+            await user.send(memento());
         }
-        catch (error) {
-            console.error("Error getting Tokens:", error);
-            return res.status(500).send("An Error Occured.");
+    }, { timezone: "Asia/Tokyo" }),
+    //daily wikipedia article broadcast
+    wikipedia: cron.schedule("0 20 * * *", async () => {
+        let { ids } = wikiChannels;
+        for (let id of ids) {
+            let channel = await client.channels.fetch(id).catch(() => undefined);
+            if (!channel || !("send" in channel)) {
+                console.error("Failed to get channel with id:", id);
+                continue;
+            }
+            let article = await getRandomArticle();
+            if (!article) {
+                console.error("Failed to fetch article.");
+                continue;
+            }
+            await channel.send(article);
         }
-    return res.status(200).json({ status: "ok", message: "still running!" });
-});
-const server = app.listen(PORT, () => console.log("Listening on port " + PORT));
+    }, { timezone: "Asia/Tokyo" }),
+};
 const { Guilds, GuildMessages, DirectMessages, MessageContent } = GatewayIntentBits;
 const { Channel, Message } = Partials;
 const client = new Client({
@@ -72,28 +70,6 @@ for (const file of commandFiles) {
         console.warn(`The command at ${filePath} is missing a required "data" or "execute" property.`);
     console.log("Successfully loaded:", command.data.name);
 }
-scheduleMap.mori = cron.schedule("0 6,18 * * *", async () => {
-    let { ids } = moriUsers;
-    for (let id of ids) {
-        let user = await client.users.fetch(id).catch(() => undefined);
-        if (!user) {
-            console.error("Failed to get channel with id:", id);
-            continue;
-        }
-        await user.send(memento());
-    }
-}, { timezone: "Asia/Tokyo" });
-scheduleMap.wikipedia = cron.schedule("0 20 * * *", async () => {
-    let { ids } = wikiChannels;
-    for (let id of ids) {
-        let channel = await client.channels.fetch(id).catch(() => undefined);
-        if (!channel || !("send" in channel)) {
-            console.error("Failed to get channel with id:", id);
-            continue;
-        }
-        await channel.send(memento());
-    }
-}, { timezone: "Asia/Tokyo" });
 client.once("clientReady", async () => {
     console.log(`Logged in as: ${client.user?.tag}`);
 });
@@ -131,6 +107,43 @@ client.on("messageCreate", async (message) => {
     }
 });
 client.login(TOKEN);
+const app = express();
+//server response for health check and oauth2
+app.get("/", async (req, res) => {
+    const { code, state } = req.query;
+    if (typeof code === "string" && typeof state === "string")
+        try {
+            let payload = parseState(state);
+            if (!payload)
+                return res.status(200).json({ status: "error", message: "Invalid state format" });
+            let { user_id, url_state } = payload;
+            let authorizeData = stateMap.get(user_id);
+            if (!authorizeData)
+                throw new Error(user_id + " is not set on stateMap.");
+            let { channel_id, saved_state } = authorizeData;
+            if (url_state !== saved_state)
+                return res.status(401).json({ status: "error", message: "Invalid state" });
+            let data = await spotifyApi.authorizationCodeGrant(code);
+            await tokenFile.add(user_id, data.body);
+            stateMap.delete(user_id);
+            res.send(`<p>Done!</p><script>setTimeout(window.close, 500); </script>`);
+            let user = client.users.cache.get(user_id);
+            let channel = client.channels.cache.get(channel_id);
+            if (!user || !channel || !("send" in channel))
+                return;
+            await channel.send(`Successfully authorized, ${user.toString()}`);
+            return;
+        }
+        catch (error) {
+            console.error("Error getting Tokens:", error);
+            return res.status(500).send("An Error Occured.");
+        }
+    return res.status(200).json({ status: "ok", message: "still running!" });
+});
+const server = app.listen(PORT, () => console.log("Listening on port " + PORT));
+process.on("beforeExit", shutdown);
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);
 async function shutdown(code = 0) {
     try {
         console.log("Shutting down...");
@@ -154,7 +167,4 @@ async function shutdown(code = 0) {
         process.exit(code);
     }
 }
-process.on("beforeExit", shutdown);
-process.on("SIGINT", shutdown);
-process.on("SIGTERM", shutdown);
 //# sourceMappingURL=index.js.map

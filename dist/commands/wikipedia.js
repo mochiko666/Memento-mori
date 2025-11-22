@@ -47,7 +47,7 @@ async function execute(interaction) {
                 throw new Error("Channel not found.");
             let { id } = channel;
             if (!wikiChannels.has(id))
-                return interaction.reply("Schedule is not yet set on the channel");
+                return interaction.reply("Schedule is not yet set on the channel.");
             await wikiChannels.remove(id);
             interaction.reply("Schedule stopped successfully.");
             break;
