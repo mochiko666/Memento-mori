@@ -6,30 +6,26 @@ const data = new SlashCommandBuilder()
     .addSubcommandGroup((group) => group
     .setName("get")
     .setDescription("Get wikipedia articles.")
-    .addSubcommand((subcommand) => subcommand.setName("random").setDescription("Gets a random article from Wikipedia."))
+    .addSubcommand((subcommand) => subcommand.setName("random").setDescription("Get a random article from Wikipedia."))
     .addSubcommand((subcommand) => subcommand
     .setName("search")
     .setDescription("Search for something on Wikipedia.")
     .addStringOption((option) => option.setName("query").setDescription("The word to search for.").setRequired(true))
     .addBooleanOption((option) => option
     .setName("randomized")
-    .setDescription("Whether to get a random article from the search results."))))
+    .setDescription("Whether to get a random article from the search results. Default is false."))))
     .addSubcommandGroup((group) => group
     .setName("daily")
     .setDescription("Get or edit daily broadcast settings.")
     .addSubcommand((subcommand) => subcommand
+    .setName("set")
+    .setDescription("Set up daily broadcast of Today's article.")
+    .addBooleanOption((option) => option
     .setName("enable")
-    .setDescription("Schedules to send Today's article to this server.")
+    .setDescription("Enable or disable daily broadcast. Default is true."))
     .addChannelOption((channel) => channel
     .setName("channel")
-    .setDescription("Where to send the article. Default channel is where the command was executed.")
-    .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement, ChannelType.GuildMedia)))
-    .addSubcommand((subcommand) => subcommand
-    .setName("disable")
-    .setDescription("Stops broadcasting Today's article.")
-    .addChannelOption((channel) => channel
-    .setName("channel")
-    .setDescription("Where to send the article. Default channel is where the command was executed.")
+    .setDescription("Where to send the article. Default is here.")
     .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement, ChannelType.GuildMedia))));
 async function execute(interaction) {
     let subcommandGroup = interaction.options.getSubcommandGroup();
@@ -53,21 +49,25 @@ async function execute(interaction) {
             await interaction.reply(article);
             break;
         case "daily":
-            let channel = interaction.options.getChannel("channel") || interaction.channel;
-            if (!channel)
-                throw new Error("Channel not found.");
-            let { id } = channel;
             switch (subcommand) {
-                case "enable": {
-                    await wikiChannels.add(id);
-                    await interaction.reply("ok i got it");
-                    break;
-                }
-                case "disable": {
-                    if (!wikiChannels.has(id))
-                        return await interaction.reply("Schedule is not yet set on the channel.");
-                    await wikiChannels.delete(id);
-                    await interaction.reply("Schedule has been removed successfully.");
+                case "set": {
+                    let enable = interaction.options.getBoolean("enable") || true;
+                    let channel = interaction.options.getChannel("channel") || interaction.channel;
+                    if (!channel)
+                        throw new Error("Channel not found.");
+                    let { id } = channel;
+                    if (enable) {
+                        if (wikiChannels.has(id))
+                            await interaction.reply("The channel is already set.");
+                        else {
+                            await wikiChannels.add(id);
+                            await interaction.reply("ok i got it");
+                        }
+                    }
+                    else if (wikiChannels.has(id))
+                        await wikiChannels.delete(id);
+                    else
+                        await interaction.reply("The channel is not set.");
                     break;
                 }
             }

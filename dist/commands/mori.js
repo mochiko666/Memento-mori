@@ -20,7 +20,7 @@ async function execute(interaction) {
             let enabled = interaction.options.getBoolean("enabled");
             if (user.bot)
                 await interaction.reply("Sorry, but bots cannot be set for daily mori reminders.");
-            else if (enabled === null || enabled === undefined) {
+            else if (enabled === null) {
                 let isEnabled = moriUsers.has(user.id);
                 await interaction.reply(`@${user.username} is ${isEnabled ? "enabled" : "disabled"} for daily mori reminders.`);
             }
