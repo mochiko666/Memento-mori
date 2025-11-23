@@ -34,6 +34,7 @@ async function execute(interaction) {
     let group = interaction.options.getSubcommandGroup();
     let subcommand = interaction.options.getSubcommand();
     let { wikiChannels } = await import("../index.js");
+    let reply = "";
     switch (group) {
         case "get":
             let article;
@@ -49,7 +50,7 @@ async function execute(interaction) {
             }
             if (!article)
                 throw new Error("Failed to find an article.");
-            await interaction.reply(article);
+            reply = article;
             break;
         case "daily":
             switch (subcommand) {
@@ -61,27 +62,32 @@ async function execute(interaction) {
                     let { id } = channel;
                     if (enable) {
                         if (wikiChannels.has(id))
-                            await interaction.reply("The channel is already set.");
+                            reply = "The channel is already set.";
                         else {
                             await wikiChannels.add(id);
-                            await interaction.reply("ok i got it");
+                            reply = "ok i got it";
                         }
                     }
-                    else if (wikiChannels.has(id))
+                    else if (wikiChannels.has(id)) {
                         await wikiChannels.delete(id);
+                        reply = "The broadcast on the channel has been disabled successfully.";
+                    }
                     else
-                        await interaction.reply("The channel is not set.");
+                        reply = "The channel is not set.";
                     break;
                 case "list":
                     let { ids } = wikiChannels;
-                    if (ids.length === 0)
-                        return await interaction.reply("No channels set for daily broadcast.");
+                    if (ids.length === 0) {
+                        reply = "No channels set for daily broadcast.";
+                        break;
+                    }
                     let list = ids.map((id) => `<#${id}>`).join("\n");
-                    await interaction.reply(`Channels set for daily broadcast:\n${list}`);
+                    reply = `Channels set for daily broadcast:\n${list}`;
                     break;
             }
             break;
     }
+    await interaction.reply(reply);
 }
 export { data, execute };
 //# sourceMappingURL=wikipedia.js.map
