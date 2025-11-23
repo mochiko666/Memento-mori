@@ -35,9 +35,10 @@ async function execute(interaction) {
             break;
         case "list":
             let { ids } = moriUsers;
+            if (ids.length === 0)
+                return await interaction.reply("No users are set for daily mori reminders.");
             let list = ids.map((id) => `<@${id}>`).join("\n");
-            await interaction.reply(`Users set for daily mori reminders:\n${list}` ||
-                "No users are set for daily mori reminders."); // <@1234567890>\n<@0987654321>
+            await interaction.reply(`Users set for daily mori reminders:\n${list}`); // <@1234567890>\n<@0987654321>
             break;
     }
 }

@@ -74,9 +74,10 @@ async function execute(interaction) {
                     break;
                 case "list":
                     let { ids } = wikiChannels;
+                    if (ids.length === 0)
+                        return await interaction.reply("No channels set for daily broadcast.");
                     let list = ids.map((id) => `<#${id}>`).join("\n");
-                    await interaction.reply(`Channels set for daily broadcast:\n${list}` ||
-                        "No channels are set for daily broadcast.");
+                    await interaction.reply(`Channels set for daily broadcast:\n${list}`);
                     break;
             }
             break;
