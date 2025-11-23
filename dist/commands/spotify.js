@@ -16,7 +16,7 @@ const data = new SlashCommandBuilder()
     .setDescription("Show the list of users' ids whose token is registered.")))
     .addSubcommandGroup((group) => group
     .setName("info")
-    .setDescription("Get Spotify tracks information.")
+    .setDescription("Get Spotify tracks information. Need to authorize if you haven't yet.")
     .addSubcommand((subcommand) => subcommand
     .setName("mytop")
     .setDescription("Fetch your top Spotify tracks. Need to authorize if you haven't yet.")
@@ -26,7 +26,7 @@ const data = new SlashCommandBuilder()
     .addChoices({ name: "Short Term (4 weeks)", value: "short_term" }, { name: "Medium Term (6 months)", value: "medium_term" }, { name: "Long Term (several years)", value: "long_term" })))
     .addSubcommand((subcommand) => subcommand
     .setName("search")
-    .setDescription("Search for Spotify tracks.")
+    .setDescription("Search for Spotify tracks. Need to authorize if you haven't yet.")
     .addStringOption((option) => option.setName("query").setDescription("The word to search for.").setRequired(true))));
 async function execute(interaction) {
     let group = interaction.options.getSubcommandGroup(true);
@@ -79,7 +79,7 @@ async function execute(interaction) {
             let tokenData = tokenFile.get(id);
             if (!tokenData)
                 return await interaction.reply({
-                    content: "You have not authorized the application permission yet. Please do /spotify info authorize.",
+                    content: "You have not authorized the application permission yet. Please do /spotify permission authorize.",
                     flags: "Ephemeral",
                 });
             let access_token = await tokenData.refreshAccessToken(spotifyApi, true);
@@ -97,7 +97,6 @@ async function execute(interaction) {
                     }));
                     let me = await spotifyApi.getMe();
                     let { spotify } = me.body.external_urls;
-                    spotifyApi.resetAccessToken();
                     //discord profile
                     let user = await interaction.user.fetch(true);
                     let avatar_url = user.displayAvatarURL();
@@ -127,6 +126,7 @@ async function execute(interaction) {
                     break;
                 }
             }
+            spotifyApi.resetAccessToken();
             break;
     }
 }
