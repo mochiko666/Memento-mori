@@ -31,7 +31,7 @@ const data = new SlashCommandBuilder()
     .setName("list")
     .setDescription("Show the list of channels set for daily broadcast.")));
 async function execute(interaction) {
-    let group = interaction.options.getSubcommandGroup();
+    let group = interaction.options.getSubcommandGroup(true);
     let subcommand = interaction.options.getSubcommand();
     let { wikiChannels } = await import("../index.js");
     let reply = "";

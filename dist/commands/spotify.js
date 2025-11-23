@@ -1,4 +1,4 @@
-import { EmbedBuilder, SlashCommandBuilder } from "discord.js";
+import { EmbedBuilder, SlashCommandBuilder, } from "discord.js";
 const data = new SlashCommandBuilder()
     .setName("spotify")
     .setDescription("Use Spotify functions.")
@@ -33,16 +33,19 @@ async function execute(interaction) {
     let subcommand = interaction.options.getSubcommand();
     let { id } = interaction.user;
     let { spotifyApi, tokenFile } = await import("../index.js");
+    let reply = "";
     switch (group) {
         case "permission":
             let { stateMap } = await import("../index.js"); //dynamic import in order to aviod co-import
             switch (subcommand) {
                 case "authorize": {
-                    if (tokenFile.has(id))
-                        return await interaction.reply({
+                    if (tokenFile.has(id)) {
+                        reply = {
                             content: "You have already authorized the application permission.",
                             flags: "Ephemeral",
-                        });
+                        };
+                        break;
+                    }
                     let { channelId } = interaction;
                     let state = Math.random().toString(36);
                     let payload = {
@@ -51,37 +54,43 @@ async function execute(interaction) {
                     };
                     let bufferedState = Buffer.from(JSON.stringify(payload)).toString("base64url");
                     stateMap.set(id, { saved_state: state, channel_id: channelId });
-                    await interaction.reply({
+                    reply = {
                         content: `Please authorize [here](${spotifyApi.createAuthorizeURL(["user-top-read"], bufferedState)}.)`,
                         flags: "Ephemeral",
-                    });
+                    };
                     break;
                 }
                 case "deauthorize": {
                     let result = await tokenFile.delete(id);
-                    await interaction.reply({
+                    reply = {
                         content: result
                             ? "Authorization successfully revoked."
                             : "You have not authorized yet.",
                         flags: "Ephemeral",
-                    });
+                    };
                     break;
                 }
                 case "list": {
                     let ids = [...Object.keys(tokenFile.file)]; // ["1234567890", "0987654321"]
+                    if (ids.length === 0) {
+                        reply = "No users authorized yet.";
+                        break;
+                    }
                     let list = ids.map((id) => `<@${id}>`).join("\n");
-                    await interaction.reply(`Users who has authorized:\n${list}` || "No users authorized yet."); // @1234567890\n@0987654321
+                    reply = `Users who has authorized:\n${list}`; // @1234567890\n@0987654321
                     break;
                 }
             }
             break;
         case "info":
             let tokenData = tokenFile.get(id);
-            if (!tokenData)
-                return await interaction.reply({
+            if (!tokenData) {
+                reply = {
                     content: "You have not authorized the application permission yet. Please do /spotify permission authorize.",
                     flags: "Ephemeral",
-                });
+                };
+                break;
+            }
             let access_token = await tokenData.refreshAccessToken(spotifyApi, true);
             if (!access_token)
                 throw new Error("Failed to get access token.");
@@ -113,22 +122,25 @@ async function execute(interaction) {
                             value: `[**${track.title}**](${track.link})      by ${track.artists}`,
                         });
                     });
-                    await interaction.reply({ embeds: [embed] });
+                    reply = { embeds: [embed] };
                     break;
                 }
                 case "search": {
                     let query = interaction.options.getString("query", true);
                     let { tracks } = (await spotifyApi.searchTracks(query, { limit: 1 })).body;
-                    if (!tracks || tracks.items.length === 0)
-                        return await interaction.reply("No tracks found.");
+                    if (!tracks || tracks.items.length === 0) {
+                        reply = "No tracks found.";
+                        break;
+                    }
                     let [track] = tracks.items;
-                    await interaction.reply(track.external_urls.spotify);
+                    reply = track.external_urls.spotify;
                     break;
                 }
             }
             spotifyApi.resetAccessToken();
             break;
     }
+    await interaction.reply(reply);
 }
 export { data, execute };
 //# sourceMappingURL=spotify.js.map

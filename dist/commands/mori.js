@@ -12,18 +12,19 @@ const data = new SlashCommandBuilder()
 async function execute(interaction) {
     let subcommand = interaction.options.getSubcommand();
     let { moriUsers } = await import("../index.js");
+    let reply = "";
     switch (subcommand) {
         case "user":
             let user = interaction.options.getUser("target") || interaction.user;
             let enabled = interaction.options.getBoolean("enabled");
             if (user.bot)
-                await interaction.reply("Sorry, but bots cannot be set for daily mori reminders.");
+                reply = "Sorry, but bots cannot be set for daily mori reminders.";
             else if (enabled === null) {
-                let isEnabled = moriUsers.has(user.id);
-                await interaction.reply(`@${user.username} is ${isEnabled ? "enabled" : "disabled"} for daily mori reminders.`);
+                let isEnabled = moriUsers.has(user.id) ? "enabled" : "disabled";
+                reply = `@${user.username} is ${isEnabled} for daily mori reminders.`;
             }
             else {
-                await interaction.reply("ok i got it");
+                reply = "ok i got it";
                 if (enabled) {
                     if (user.equals(interaction.user))
                         await user.send(memento());
@@ -35,12 +36,15 @@ async function execute(interaction) {
             break;
         case "list":
             let { ids } = moriUsers;
-            if (ids.length === 0)
-                return await interaction.reply("No users are set for daily mori reminders.");
+            if (ids.length === 0) {
+                reply = "No users are set for daily mori reminders.";
+                break;
+            }
             let list = ids.map((id) => `<@${id}>`).join("\n");
             await interaction.reply(`Users set for daily mori reminders:\n${list}`); // <@1234567890>\n<@0987654321>
             break;
     }
+    await interaction.reply(reply);
 }
 export { data, execute };
 //# sourceMappingURL=mori.js.map
