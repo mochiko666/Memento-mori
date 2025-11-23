@@ -41,9 +41,7 @@ async function execute(interaction) {
                     break;
                 case "search":
                     let query = interaction.options.getString("query", true);
-                    article = await searchArticle(query, false);
-                    if (!article)
-                        throw new Error("Failed to find an article.");
+                    article = await searchArticle(query);
                     break;
             }
             if (!article)
@@ -58,7 +56,7 @@ async function execute(interaction) {
                         throw new Error("Channel not found.");
                     let { id } = channel;
                     await wikiChannels.add(id);
-                    interaction.reply("ok i got it");
+                    await interaction.reply("ok i got it");
                     break;
                 }
                 case "disable": {
@@ -69,7 +67,7 @@ async function execute(interaction) {
                     if (!wikiChannels.has(id))
                         return interaction.reply("Schedule is not yet set on the channel.");
                     await wikiChannels.delete(id);
-                    interaction.reply("Schedule has been removed successfully.");
+                    await interaction.reply("Schedule has been removed successfully.");
                     break;
                 }
             }
