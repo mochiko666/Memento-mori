@@ -16,16 +16,16 @@ async function execute(interaction) {
     switch (subcommand) {
         case "user":
             let user = interaction.options.getUser("target") || interaction.user;
-            let enabled = interaction.options.getBoolean("enable");
+            let enable = interaction.options.getBoolean("enable");
             if (user.bot)
                 reply = "Sorry, but bots cannot be set for daily mori reminders.";
-            else if (enabled === null) {
+            else if (enable === null) {
                 let isEnabled = moriUsers.has(user.id) ? "enabled" : "disabled";
                 reply = `@${user.displayName} is ${isEnabled} for daily mori reminders.`;
             }
             else {
                 reply = "ok i got it";
-                if (enabled) {
+                if (enable) {
                     if (user.equals(interaction.user))
                         await user.send(memento());
                     await moriUsers.add(user.id);
@@ -41,7 +41,7 @@ async function execute(interaction) {
                 break;
             }
             let list = ids.map((id) => `<@${id}>`).join("\n");
-            await interaction.reply(`Users set for daily mori reminders:\n${list}`); // <@1234567890>\n<@0987654321>
+            reply = `Users set for daily mori reminders:\n${list}`; // <@1234567890>\n<@0987654321>
             break;
     }
     await interaction.reply(reply);
