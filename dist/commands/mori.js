@@ -16,12 +16,12 @@ async function execute(interaction) {
     switch (subcommand) {
         case "user":
             let user = interaction.options.getUser("target") || interaction.user;
-            let enabled = interaction.options.getBoolean("enabled");
+            let enabled = interaction.options.getBoolean("enable");
             if (user.bot)
                 reply = "Sorry, but bots cannot be set for daily mori reminders.";
             else if (enabled === null) {
                 let isEnabled = moriUsers.has(user.id) ? "enabled" : "disabled";
-                reply = `@${user.username} is ${isEnabled} for daily mori reminders.`;
+                reply = `@${user.displayName} is ${isEnabled} for daily mori reminders.`;
             }
             else {
                 reply = "ok i got it";
