@@ -79,8 +79,8 @@ client.on("interactionCreate", async (interaction) => {
     let client = interaction.client;
     let command = client.commands.get(interaction.commandName);
     try {
-        await command?.execute(interaction);
         console.log(`Executed command: ${interaction.commandName}, by ${interaction.user.tag}.`);
+        await command?.execute(interaction);
     }
     catch (error) {
         console.error(error);
