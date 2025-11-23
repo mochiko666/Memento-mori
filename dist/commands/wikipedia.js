@@ -2,7 +2,7 @@ import { ChannelType, SlashCommandBuilder } from "discord.js";
 import { getRandomArticle, searchArticle } from "../utils/wikipedia.js";
 const data = new SlashCommandBuilder()
     .setName("wikipedia")
-    .setDescription("Get or edit settings for wikipedia function")
+    .setDescription("Use Wikipedia functions.")
     .addSubcommandGroup((group) => group
     .setName("get")
     .setDescription("Get wikipedia articles.")
@@ -25,13 +25,16 @@ const data = new SlashCommandBuilder()
     .setDescription("Enable or disable daily broadcast. Default is true."))
     .addChannelOption((channel) => channel
     .setName("channel")
-    .setDescription("Where to send the article. Default is here.")
-    .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement, ChannelType.GuildMedia))));
+    .setDescription("Where to send the article. Default is the current channel.")
+    .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement, ChannelType.GuildMedia)))
+    .addSubcommand((subcommand) => subcommand
+    .setName("list")
+    .setDescription("Show the list of channels set for daily broadcast.")));
 async function execute(interaction) {
-    let subcommandGroup = interaction.options.getSubcommandGroup();
+    let group = interaction.options.getSubcommandGroup();
     let subcommand = interaction.options.getSubcommand();
     let { wikiChannels } = await import("../index.js");
-    switch (subcommandGroup) {
+    switch (group) {
         case "get":
             let article;
             switch (subcommand) {
@@ -50,7 +53,7 @@ async function execute(interaction) {
             break;
         case "daily":
             switch (subcommand) {
-                case "set": {
+                case "set":
                     let enable = interaction.options.getBoolean("enable") || true;
                     let channel = interaction.options.getChannel("channel") || interaction.channel;
                     if (!channel)
@@ -69,7 +72,12 @@ async function execute(interaction) {
                     else
                         await interaction.reply("The channel is not set.");
                     break;
-                }
+                case "list":
+                    let { ids } = wikiChannels;
+                    let list = ids.map((id) => `<#${id}>`).join("\n");
+                    await interaction.reply(`Channels set for daily broadcast:\n${list}` ||
+                        "No channels are set for daily broadcast.");
+                    break;
             }
             break;
     }

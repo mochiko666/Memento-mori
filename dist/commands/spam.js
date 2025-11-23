@@ -13,10 +13,10 @@ async function execute(interaction) {
     let target = interaction.options.getUser("target", true);
     let count = interaction.options.getInteger("count") || 6;
     if (target.bot) {
-        await interaction.reply("Sorry, but I cannot spam bots.");
+        await interaction.reply("Sorry, but I cannot spam to bots.");
         return;
     }
-    await interaction.reply(`Sending ${count} mori messages to @${target.username}...`);
+    await interaction.reply(`Spamming ${count} mori messages to @${target.username}...`);
     for (let i = 0; i < count; i++) {
         await target.send(memento());
     }

@@ -6,11 +6,11 @@ async function readTokens(wrapped = false, path = tokensPath) {
     try {
         const raw = await fs.readFile(path, "utf-8");
         const file = JSON.parse(raw);
-        return wrapped ? new TokensFileWrapper(file, path) : file;
+        return wrapped ? new TokenFileWrapper(file, path) : file;
     }
     catch (e) {
         if (e?.code === "ENOENT")
-            return wrapped ? new TokensFileWrapper({}, path) : {};
+            return wrapped ? new TokenFileWrapper({}, path) : {};
         throw e;
     }
 }
@@ -74,31 +74,34 @@ const tokenUtils = {
     isValid,
     parse: parseState,
 };
-class TokensFileWrapper {
+class TokenFileWrapper {
+    tokenFile;
     filePath;
     constructor(tokenFile, filePath = tokensPath) {
+        this.tokenFile = tokenFile;
         this.filePath = filePath;
         for (const [userId, data] of Object.entries(tokenFile))
             this.set(userId, data);
     }
-    __cache = new Map();
-    get cache() {
-        return this.__cache;
+    cache = new Map();
+    get file() {
+        return this.tokenFile;
     }
     async save() {
         const tmpPath = this.filePath + ".tmp";
-        const tokenFile = Object.fromEntries([...this.__cache].map(([id, data]) => [id, data.data]));
-        await fs.writeFile(tmpPath, JSON.stringify(tokenFile, null, 2));
+        await fs.writeFile(tmpPath, JSON.stringify(this.file, null, 2));
         await fs.rename(tmpPath, this.filePath);
     }
-    set = (userId, data) => this.__cache.set(userId, new UserTokenDataWrapper(userId, data, this));
+    set = (userId, data) => this.cache.set(userId, new UserTokenDataWrapper(userId, data, this));
+    has = (userId) => this.cache.has(userId);
+    get = (userId) => this.cache.get(userId);
     /**
      * Adds user token data to the token file.
      * @returns A promise that if successful, returns true.
      *          if the user id already existed in the cache, returns false.
      */
     async add(userId, data) {
-        if (this.__cache.has(userId))
+        if (this.cache.has(userId))
             return false;
         this.set(userId, data);
         await this.save();
@@ -110,7 +113,7 @@ class TokensFileWrapper {
      *          or false if the user id does not exist.
      */
     async delete(userId) {
-        const existed = this.__cache.delete(userId);
+        const existed = this.cache.delete(userId);
         if (existed)
             await this.save();
         return existed;
@@ -192,5 +195,5 @@ class UserTokenDataWrapper {
     }
     isValid = () => Date.now() < this.expires_in - 666; //subtract 666ms from expiration time for safety
 }
-export { deleteToken, getToken, isValid, isValidById, parseState, readTokens, saveTokens, setToken, TokensFileWrapper, tokenUtils, };
+export { deleteToken, getToken, isValid, isValidById, parseState, readTokens, saveTokens, setToken, TokenFileWrapper, tokenUtils, };
 //# sourceMappingURL=token.js.map
