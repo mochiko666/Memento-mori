@@ -10,7 +10,10 @@ const data = new SlashCommandBuilder()
     .addSubcommand((subcommand) => subcommand
     .setName("search")
     .setDescription("Search for something on Wikipedia.")
-    .addStringOption((option) => option.setName("query").setDescription("The word to search for.").setRequired(true))))
+    .addStringOption((option) => option.setName("query").setDescription("The word to search for.").setRequired(true))
+    .addBooleanOption((option) => option
+    .setName("randomized")
+    .setDescription("Whether to get a random article from the search results."))))
     .addSubcommandGroup((group) => group
     .setName("daily")
     .setDescription("Get or edit daily broadcast settings.")
@@ -41,7 +44,8 @@ async function execute(interaction) {
                     break;
                 case "search":
                     let query = interaction.options.getString("query", true);
-                    article = await searchArticle(query);
+                    let randomized = interaction.options.getBoolean("randomized") || false;
+                    article = await searchArticle(query, randomized);
                     break;
             }
             if (!article)
@@ -49,21 +53,17 @@ async function execute(interaction) {
             await interaction.reply(article);
             break;
         case "daily":
+            let channel = interaction.options.getChannel("channel") || interaction.channel;
+            if (!channel)
+                throw new Error("Channel not found.");
+            let { id } = channel;
             switch (subcommand) {
                 case "enable": {
-                    let channel = interaction.options.getChannel("channel") || interaction.channel;
-                    if (!channel)
-                        throw new Error("Channel not found.");
-                    let { id } = channel;
                     await wikiChannels.add(id);
                     await interaction.reply("ok i got it");
                     break;
                 }
                 case "disable": {
-                    let channel = interaction.options.getChannel("channel") || interaction.channel;
-                    if (!channel)
-                        throw new Error("Channel not found.");
-                    let { id } = channel;
                     if (!wikiChannels.has(id))
                         return await interaction.reply("Schedule is not yet set on the channel.");
                     await wikiChannels.delete(id);
