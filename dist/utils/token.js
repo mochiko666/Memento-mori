@@ -159,7 +159,7 @@ class UserTokenDataWrapper {
      * @param spotifyApi {@link SpotifyWebApi}.
      * @param set Whether to set the access token to spotifyApi. Default is false.
      * @returns A promise that if successful, resolves to the new access token.
-     *          If the promise rejected, undefined if failed to refresh the access token.
+     *          If the promise rejected, returns undefined.
      */
     async refreshAccessToken(spotifyApi, set = false) {
         let token;

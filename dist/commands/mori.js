@@ -9,7 +9,7 @@ const data = new SlashCommandBuilder()
     .addBooleanOption((option) => option.setName("enabled").setDescription("Whether to receive daily reminders."))
     .addUserOption((option) => option
     .setName("target")
-    .setDescription("The user('s ID) to get or edit. Defaults to yourself.")))
+    .setDescription("The user('s ID) to affect. Default is yourself.")))
     .addSubcommand((subcommand) => subcommand.setName("list").setDescription("Get mori reminder list"));
 async function execute(interaction) {
     let subcommand = interaction.options.getSubcommand();
@@ -32,7 +32,7 @@ async function execute(interaction) {
                     await moriUsers.add(user.id);
                 }
                 else
-                    await moriUsers.remove(user.id);
+                    await moriUsers.delete(user.id);
             }
             break;
         case "list":

@@ -1,7 +1,7 @@
 import {} from "discord.js";
 import { promises as fs } from "fs";
 import path from "path";
-const listPath = path.join(process.cwd(), "mori_users.txt");
+const LIST_PATH = path.join(process.cwd(), "mori_users.txt");
 const messages = [
     "Memento mori.",
     "Remember that you will die.",
@@ -12,7 +12,7 @@ function memento() {
     let message = messages[rand < 0.06 ? 2 : rand < 0.13 ? 1 : 0];
     return message || "Memento mori.";
 }
-async function readList(path = listPath) {
+async function readList(path = LIST_PATH) {
     try {
         const raw = await fs.readFile(path, "utf-8"); // 123456789\n987654321
         return raw
@@ -26,22 +26,23 @@ async function readList(path = listPath) {
         throw e;
     }
 }
-async function saveList(ids, path = listPath) {
-    const uniq = Array.from(new Set(ids.map((s) => s.trim()).filter(Boolean))); // remove duplicates and empty strings
-    await fs.writeFile(path, uniq.join("\n"), "utf-8"); // "123456789\n987654321"
+async function saveList(ids, path = LIST_PATH) {
+    const uniq = Array.from(new Set(ids.map((s) => s.trim()).filter(Boolean)));
+    const tmp = LIST_PATH + ".tmp";
+    await fs.writeFile(tmp, uniq.join("\n"), "utf8");
+    await fs.rename(tmp, path);
 }
-async function hasId(id, path = listPath) {
+async function hasId(id, path = LIST_PATH) {
     const ids = await readList(path);
     return ids.includes(id);
 }
-async function addUserId(id, path = listPath) {
+async function addUserId(id, path = LIST_PATH) {
     const ids = await readList(path);
-    if (ids.includes(id))
-        return;
-    ids.push(id);
+    if (!ids.includes(id))
+        ids.push(id);
     await saveList(ids, path);
 }
-async function removeUserId(id, path = listPath) {
+async function removeUserId(id, path = LIST_PATH) {
     const ids = await readList(path);
     const filtered = ids.filter((x) => x !== id);
     await saveList(filtered);
@@ -60,18 +61,19 @@ class IDManager {
     get ids() {
         return this.cache;
     }
-    constructor(path = listPath) {
+    constructor(path = LIST_PATH) {
         this.path = path;
     }
     load = async () => (this.cache = await readList(this.path));
     save = async () => await saveList(this.cache, this.path);
     has = (id) => this.cache.includes(id);
     async add(id) {
-        this.cache.push(id);
+        if (!this.has(id))
+            this.cache.push(id);
         await this.save();
     }
-    async remove(id) {
-        this.cache.filter((cachedId) => cachedId !== id);
+    async delete(id) {
+        this.cache = this.cache.filter((cachedId) => cachedId !== id);
         await this.save();
     }
 }

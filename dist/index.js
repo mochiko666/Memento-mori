@@ -7,7 +7,7 @@ import SpotifyWebApi from "spotify-web-api-node";
 import { pathToFileURL } from "url";
 import { IDManager, memento } from "./utils/mori.js";
 import { parseState, readTokens } from "./utils/token.js";
-import { getRandomArticle } from "./utils/wikipedia.js";
+import { searchArticle } from "./utils/wikipedia.js";
 const { TOKEN, PORT, SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, SPOTIFY_REDIRECT_URI } = process.env;
 const spotifyApi = new SpotifyWebApi({
     clientId: SPOTIFY_CLIENT_ID,
@@ -43,9 +43,9 @@ const scheduleMap = {
                 console.error("Failed to get channel with id:", id);
                 continue;
             }
-            let article = await getRandomArticle();
+            let article = await searchArticle("哲学", true, 666);
             if (!article) {
-                console.error("Failed to fetch article.");
+                console.error("Failed to find an article.");
                 continue;
             }
             await channel.send(article);
@@ -80,6 +80,7 @@ client.on("interactionCreate", async (interaction) => {
     let command = client.commands.get(interaction.commandName);
     try {
         await command?.execute(interaction);
+        console.log(`Executed command: ${interaction.commandName}, by ${interaction.user.tag}.`);
     }
     catch (error) {
         console.error(error);
@@ -126,7 +127,7 @@ app.get("/", async (req, res) => {
             let data = await spotifyApi.authorizationCodeGrant(code);
             await tokenFile.add(user_id, data.body);
             stateMap.delete(user_id);
-            res.send(`<p>Done!</p><script>setTimeout(window.close, 500); </script>`);
+            res.send(`<p>Done!</p><script>setTimeout(window.close, 4 * 1000); </script>`);
             let user = client.users.cache.get(user_id);
             let channel = client.channels.cache.get(channel_id);
             if (!user || !channel || !("send" in channel))
@@ -157,6 +158,12 @@ async function shutdown(code = 0) {
         if (client)
             await client.destroy();
         console.log("Discord client destroyed.");
+        await tokenFile.save();
+        console.log("Token file saved.");
+        await moriUsers.save();
+        console.log("Memento mori user list saved.");
+        await wikiChannels.save();
+        console.log("Wikipedia channel list saved.");
     }
     catch (error) {
         console.error("Error during shutdown:", error);
