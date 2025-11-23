@@ -54,12 +54,12 @@ async function execute(interaction) {
         case "daily":
             switch (subcommand) {
                 case "set":
-                    let enable = interaction.options.getBoolean("enable");
+                    let enable = interaction.options.getBoolean("enable") ?? true;
                     let channel = interaction.options.getChannel("channel") || interaction.channel;
                     if (!channel)
                         throw new Error("Channel not found.");
                     let { id } = channel;
-                    if (enable || enable === null) {
+                    if (enable) {
                         if (wikiChannels.has(id))
                             await interaction.reply("The channel is already set.");
                         else {
