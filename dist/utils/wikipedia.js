@@ -48,7 +48,7 @@ async function getArticleWithCategory(category, randomized = false) {
  * @param query Query to search for.
  * @param randomized Whether to get a random article from the search results. Default is false.
  * @param threshold Maximum number of search results to consider when randomized is true.
- * @returns String URL for a random article fetched from wikipedia.
+ * @returns String URL for the article fetched from wikipedia.
  */
 async function searchArticle(query, randomized = false, threshold) {
     const url = new URL(endpoint);

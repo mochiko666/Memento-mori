@@ -49,8 +49,9 @@ async function execute(interaction) {
                     break;
             }
             if (!article)
-                throw new Error("Failed to find an article.");
-            reply = article;
+                reply = "Failed to find an article.";
+            else
+                reply = article;
             break;
         case "daily":
             switch (subcommand) {
