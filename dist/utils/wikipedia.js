@@ -16,8 +16,7 @@ async function getRandomArticle(limit = 1) {
         const [article] = data.query.random;
         if (!article)
             return;
-        const pageUrl = buildURL(article.title);
-        return pageUrl;
+        return buildURL(article.title);
     }
     catch {
         return;
@@ -37,8 +36,7 @@ async function getArticleWithCategory(category, randomized = false) {
         const article = categorymembers[index];
         if (!article)
             return;
-        const pageUrl = buildURL(article.title);
-        return pageUrl;
+        return buildURL(article.title);
     }
     catch {
         return;
@@ -70,8 +68,7 @@ async function searchArticle(query, randomized = false, threshold) {
         const [article] = search;
         if (!article)
             return;
-        const pageUrl = buildURL(article.title);
-        return pageUrl;
+        return buildURL(article.title);
     }
     catch {
         return;

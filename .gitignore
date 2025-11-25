@@ -1,13 +1,9 @@
-# Node
 node_modules
 
-register-commands.js
-test.*
+*.js
+*.txt
+*.json
 .env
-src/
-*.ts
-*.map
-
-tsconfig.json
-list.txt
-tokens.json
+test.*
+dist
+tests

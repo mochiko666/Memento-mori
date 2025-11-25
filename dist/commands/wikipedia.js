@@ -13,7 +13,10 @@ const data = new SlashCommandBuilder()
     .addStringOption((option) => option.setName("query").setDescription("The word to search for.").setRequired(true))
     .addBooleanOption((option) => option
     .setName("randomized")
-    .setDescription("Whether to get a random article from the search results. Default is false."))))
+    .setDescription("Whether to get a random article from the search results. Defaults to false."))
+    .addIntegerOption((option) => option
+    .setName("threshold")
+    .setDescription("Maximum number of search results to consider when randomized is true. Defaults to all divided by 6."))))
     .addSubcommandGroup((group) => group
     .setName("daily")
     .setDescription("Get or edit daily broadcast settings.")

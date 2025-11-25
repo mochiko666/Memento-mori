@@ -1,0 +1,56 @@
+import { type ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js";
+import { memento } from "../utils/mori.js";
+
+const data = new SlashCommandBuilder()
+  .setName("mori")
+  .setDescription("Manage daily mori reminder settings")
+  .addSubcommand((subcommand) =>
+    subcommand
+      .setName("user")
+      .setDescription("Get or edit mori reminder settings for a user")
+      .addBooleanOption((option) =>
+        option.setName("enable").setDescription("Whether to receive daily reminders.")
+      )
+      .addUserOption((option) =>
+        option.setName("target").setDescription("The user('s ID) to affect. Default is yourself.")
+      )
+  )
+  .addSubcommand((subcommand) =>
+    subcommand.setName("list").setDescription("Get mori reminder list")
+  );
+
+async function execute(interaction: ChatInputCommandInteraction) {
+  let subcommand = interaction.options.getSubcommand();
+  let { moriUsers } = await import("../index.js");
+  let reply: string = "";
+
+  switch (subcommand) {
+    case "user":
+      let user = interaction.options.getUser("target") || interaction.user;
+      let enable = interaction.options.getBoolean("enable");
+      if (user.bot) reply = "Sorry, but bots cannot be set for daily mori reminders.";
+      else if (enable === null) {
+        let isEnabled = moriUsers.has(user.id) ? "enabled" : "disabled";
+        reply = `@${user.displayName} is ${isEnabled} for daily mori reminders.`;
+      } else {
+        reply = "ok i got it";
+        if (enable) {
+          if (user.equals(interaction.user)) await user.send(memento());
+          await moriUsers.add(user.id);
+        } else await moriUsers.delete(user.id);
+      }
+      break;
+    case "list":
+      let { ids } = moriUsers;
+      if (ids.length === 0) {
+        reply = "No users are set for daily mori reminders.";
+        break;
+      }
+      let list = ids.map((id) => `<@${id}>`).join("\n");
+      reply = `Users set for daily mori reminders:\n${list}`; // <@1234567890>\n<@0987654321>
+      break;
+  }
+  await interaction.reply(reply);
+}
+
+export { data, execute };
