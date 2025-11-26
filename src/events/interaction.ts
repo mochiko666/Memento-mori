@@ -35,8 +35,10 @@ export const Handler: EventHandler = {
         console.error(`No command matching ${interaction.commandName} was found.`);
         return;
       }
-      if(!command.autocomplete) {
-        console.error(`The command ${interaction.commandName} does not have an autocomplete handler.`);
+      if (!command.autocomplete) {
+        console.error(
+          `The command ${interaction.commandName} does not have an autocomplete handler.`
+        );
         return;
       }
       try {

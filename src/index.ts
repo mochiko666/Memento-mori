@@ -4,10 +4,10 @@ import fs from "fs";
 import cron from "node-cron";
 import path from "path";
 import SpotifyWebApi from "spotify-web-api-node";
+import { pathToFileURL } from "url";
 import { IDManager, memento } from "./utils/mori.js";
 import { parseState, readTokens } from "./utils/token.js";
 import { searchArticle } from "./utils/wikipedia.js";
-import { pathToFileURL } from "url";
 
 const { TOKEN, PORT, SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, SPOTIFY_REDIRECT_URI } = process.env;
 const spotifyApi = new SpotifyWebApi({
@@ -35,11 +35,11 @@ const commandFiles = fs.readdirSync(commandsPath).filter((file) => file.endsWith
 for (const file of commandFiles) {
   const filePath = path.join(commandsPath, file); // ./commands/mori.js
   const command: SlashCommand = await import(pathToFileURL(filePath).href);
-  if ("data" in command && "execute" in command) client.commands.set(command.data.name, command);
-  else
+  if ("data" in command && "execute" in command) {
+    client.commands.set(command.data.name, command);
+    console.log("Successfully loaded:", command.data.name);
+  } else
     console.warn(`The command at ${filePath} is missing a required "data" or "execute" property.`);
-
-  console.log("Successfully loaded:", command.data.name);
 }
 
 const eventsPath = path.join(import.meta.dirname, "events"); // ./events
@@ -52,6 +52,7 @@ for (const file of eventFiles) {
   } else {
     client.on(event.name, (...args) => event.execute(...args));
   }
+  console.log("Successfully loaded:", event.name);
 }
 
 client.login(TOKEN);
