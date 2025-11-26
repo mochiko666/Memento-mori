@@ -29,7 +29,7 @@ const client = new Client({
   partials: [Channel, Message],
 }) as ExtendedClient;
 client.commands = new Collection();
-const commandsPath = path.join(__dirname, "commands"); // ./commands
+const commandsPath = path.join(import.meta.dirname, "commands"); // ./commands
 const commandFiles = fs.readdirSync(commandsPath).filter((file) => file.endsWith(".js")); // ["mori.js", ...]
 for (const file of commandFiles) {
   const filePath = path.join(commandsPath, file); // ./commands/mori.js
@@ -41,7 +41,7 @@ for (const file of commandFiles) {
   console.log("Successfully loaded:", command.data.name);
 }
 
-const eventsPath = path.join(__dirname, "events"); // ./events
+const eventsPath = path.join(import.meta.dirname, "events"); // ./events
 const eventFiles = fs.readdirSync(eventsPath).filter((file) => file.endsWith(".js")); // ["message.js", ...]
 for (const file of eventFiles) {
   const filePath = path.join(eventsPath, file); // ./events/message.js
