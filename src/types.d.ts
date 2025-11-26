@@ -3,7 +3,7 @@ import type {
   ChatInputCommandInteraction,
   Client,
   Collection,
-  Events,
+  ClientEvents,
   SharedSlashCommand,
   Snowflake,
 } from "discord.js";
@@ -15,7 +15,8 @@ declare global {
     autocomplete?: (interaction: AutocompleteInteraction) => Promise<void>;
   }
   interface EventHandler {
-    name: Events | keyof typeof Events;
+    name: keyof ClientEvents;
+    once?: boolean;
     execute: (...args: any[]) => Promise<void>;
   }
   interface ExtendedClient extends Client {

@@ -7,6 +7,7 @@ import SpotifyWebApi from "spotify-web-api-node";
 import { IDManager, memento } from "./utils/mori.js";
 import { parseState, readTokens } from "./utils/token.js";
 import { searchArticle } from "./utils/wikipedia.js";
+import { pathToFileURL } from "url";
 
 const { TOKEN, PORT, SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, SPOTIFY_REDIRECT_URI } = process.env;
 const spotifyApi = new SpotifyWebApi({
@@ -33,7 +34,7 @@ const commandsPath = path.join(import.meta.dirname, "commands"); // ./commands
 const commandFiles = fs.readdirSync(commandsPath).filter((file) => file.endsWith(".js")); // ["mori.js", ...]
 for (const file of commandFiles) {
   const filePath = path.join(commandsPath, file); // ./commands/mori.js
-  const command: SlashCommand = require(filePath);
+  const command: SlashCommand = await import(pathToFileURL(filePath).href);
   if ("data" in command && "execute" in command) client.commands.set(command.data.name, command);
   else
     console.warn(`The command at ${filePath} is missing a required "data" or "execute" property.`);
@@ -45,7 +46,7 @@ const eventsPath = path.join(import.meta.dirname, "events"); // ./events
 const eventFiles = fs.readdirSync(eventsPath).filter((file) => file.endsWith(".js")); // ["message.js", ...]
 for (const file of eventFiles) {
   const filePath = path.join(eventsPath, file); // ./events/message.js
-  const event = require(filePath);
+  const event: EventHandler = await import(pathToFileURL(filePath).href);
   if (event.once) {
     client.once(event.name, (...args) => event.execute(...args));
   } else {
