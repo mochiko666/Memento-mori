@@ -1,7 +1,7 @@
 import { Events, type Message, type OmitPartialGroupDMChannel } from "discord.js";
 import { memento } from "../utils/mori.js";
 
-export const Handler: EventHandler = {
+export default<EventHandler> {
   name: Events.MessageCreate,
   async execute(message: OmitPartialGroupDMChannel<Message>) {
     if (message.author.bot) return;

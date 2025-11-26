@@ -6,4 +6,5 @@ tokens.json
 .env
 test.*
 dist
+types
 tests

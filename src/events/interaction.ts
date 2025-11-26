@@ -1,6 +1,6 @@
 import { Events, type Interaction } from "discord.js";
 
-export const Handler: EventHandler = {
+export default<EventHandler> {
   name: Events.InteractionCreate,
   async execute(interaction: Interaction) {
     let client = interaction.client as ExtendedClient;
