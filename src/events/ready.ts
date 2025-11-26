@@ -1,9 +1,11 @@
 import { Events } from "discord.js";
 
-export default <EventHandler>{
+const handler: EventHandler = {
   name: Events.ClientReady,
   once: true,
   async execute(client: ExtendedClient) {
     console.log(`Ready! Logged in as ${client.user?.tag}`);
   },
 };
+
+export { handler };
