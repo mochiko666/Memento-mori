@@ -1,5 +1,5 @@
 import { type ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js";
-import { memento } from "../utils/mori.js";
+import { memento, type IDManager } from "../utils/mori.js";
 
 const data = new SlashCommandBuilder()
   .setName("mori")
@@ -21,7 +21,7 @@ const data = new SlashCommandBuilder()
 
 async function execute(interaction: ChatInputCommandInteraction) {
   let subcommand = interaction.options.getSubcommand();
-  let { moriUsers } = await import("../index.js");
+  let { moriUsers } = await import("../index.js"); // avoid circular dependency
   let reply: string = "";
 
   switch (subcommand) {

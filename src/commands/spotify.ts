@@ -66,7 +66,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
 
   switch (group) {
     case "permission":
-      let { stateMap } = await import("../index.js"); //dynamic import in order to aviod co-import
+      let { stateMap } = await import("../index.js"); //avoid circular dependency
       switch (subcommand) {
         case "authorize": {
           if (tokenFile.has(id)) {

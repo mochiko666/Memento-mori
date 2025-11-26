@@ -4,7 +4,6 @@ import fs from "fs";
 import cron from "node-cron";
 import path from "path";
 import SpotifyWebApi from "spotify-web-api-node";
-import { pathToFileURL } from "url";
 import { IDManager, memento } from "./utils/mori.js";
 import { parseState, readTokens } from "./utils/token.js";
 import { searchArticle } from "./utils/wikipedia.js";
@@ -22,6 +21,39 @@ const wikiChannels = new IDManager(path.join(process.cwd(), "wikipedia_channels.
 moriUsers.load();
 wikiChannels.load();
 export { moriUsers, spotifyApi, stateMap, tokenFile, wikiChannels };
+
+const { Guilds, GuildMessages, DirectMessages, MessageContent } = GatewayIntentBits;
+const { Channel, Message } = Partials;
+const client = new Client({
+  intents: [Guilds, GuildMessages, DirectMessages, MessageContent],
+  partials: [Channel, Message],
+}) as ExtendedClient;
+client.commands = new Collection();
+const commandsPath = path.join(__dirname, "commands"); // ./commands
+const commandFiles = fs.readdirSync(commandsPath).filter((file) => file.endsWith(".js")); // ["mori.js", ...]
+for (const file of commandFiles) {
+  const filePath = path.join(commandsPath, file); // ./commands/mori.js
+  const command: SlashCommand = require(filePath);
+  if ("data" in command && "execute" in command) client.commands.set(command.data.name, command);
+  else
+    console.warn(`The command at ${filePath} is missing a required "data" or "execute" property.`);
+
+  console.log("Successfully loaded:", command.data.name);
+}
+
+const eventsPath = path.join(__dirname, "events"); // ./events
+const eventFiles = fs.readdirSync(eventsPath).filter((file) => file.endsWith(".js")); // ["message.js", ...]
+for (const file of eventFiles) {
+  const filePath = path.join(eventsPath, file); // ./events/message.js
+  const event = require(filePath);
+  if (event.once) {
+    client.once(event.name, (...args) => event.execute(...args));
+  } else {
+    client.on(event.name, (...args) => event.execute(...args));
+  }
+}
+
+client.login(TOKEN);
 
 const scheduleMap: Record<string, cron.ScheduledTask> = {
   //memento mori reminder
@@ -64,64 +96,6 @@ const scheduleMap: Record<string, cron.ScheduledTask> = {
     { timezone: "Asia/Tokyo" }
   ),
 };
-
-const { Guilds, GuildMessages, DirectMessages, MessageContent } = GatewayIntentBits;
-const { Channel, Message } = Partials;
-const client = new Client({
-  intents: [Guilds, GuildMessages, DirectMessages, MessageContent],
-  partials: [Channel, Message],
-}) as ExtendedClient;
-client.commands = new Collection();
-const commandsPath = path.join(import.meta.dirname, "commands"); // ./commands
-const commandFiles = fs.readdirSync(commandsPath).filter((file) => file.endsWith(".js")); // ["mori.js", ...]
-for (const file of commandFiles) {
-  const filePath = path.join(commandsPath, file); // ./commands/mori.js
-  const command: SlashCommand = await import(pathToFileURL(filePath).href); // file:///./commands/mori.js
-  if ("data" in command && "execute" in command) client.commands.set(command.data.name, command);
-  else
-    console.warn(`The command at ${filePath} is missing a required "data" or "execute" property.`);
-
-  console.log("Successfully loaded:", command.data.name);
-}
-
-client.once("clientReady", async () => {
-  console.log(`Logged in as: ${client.user?.tag}`);
-});
-
-client.on("interactionCreate", async (interaction) => {
-  if (!interaction.isChatInputCommand()) return;
-  let client = interaction.client as ExtendedClient;
-  let command = client.commands.get(interaction.commandName);
-
-  try {
-    console.log(`Executed command: ${interaction.commandName}, by ${interaction.user.tag}.`);
-    await command?.execute(interaction);
-  } catch (error) {
-    console.error(error);
-    if (interaction.replied || interaction.deferred) {
-      await interaction.followUp({
-        content: "There was an error while executing this command.",
-        flags: "Ephemeral",
-      });
-    } else {
-      await interaction.reply({
-        content: "There was an error while executing this command.",
-        flags: "Ephemeral",
-      });
-    }
-  }
-});
-
-client.on("messageCreate", async (message) => {
-  if (message.author.bot) return;
-  // DM
-  if (!message.inGuild()) {
-    await message.reply(memento());
-    return;
-  }
-});
-
-client.login(TOKEN);
 
 const app = express();
 //server response for health check and oauth2
@@ -183,7 +157,7 @@ async function shutdown(code = 0) {
     console.log("Token file saved.");
 
     await moriUsers.save();
-    console.log("Memento mori user list saved.")
+    console.log("Memento mori user list saved.");
     await wikiChannels.save();
     console.log("Wikipedia channel list saved.");
   } catch (error) {

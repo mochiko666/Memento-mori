@@ -1,15 +1,22 @@
-import {
+import type {
+  AutocompleteInteraction,
   ChatInputCommandInteraction,
   Client,
   Collection,
+  Events,
   SharedSlashCommand,
-  type Snowflake,
+  Snowflake,
 } from "discord.js";
 
 declare global {
   interface SlashCommand {
     data: SharedSlashCommand;
     execute: (interaction: ChatInputCommandInteraction) => Promise<void>;
+    autocomplete?: (interaction: AutocompleteInteraction) => Promise<void>;
+  }
+  interface EventHandler {
+    name: Events | keyof typeof Events;
+    execute: (...args: any[]) => Promise<void>;
   }
   interface ExtendedClient extends Client {
     commands: Collection<string, SlashCommand>;
