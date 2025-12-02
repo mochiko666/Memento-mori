@@ -5,23 +5,44 @@ import cron from "node-cron";
 import path from "path";
 import SpotifyWebApi from "spotify-web-api-node";
 import { pathToFileURL } from "url";
-import { IDManager, memento } from "./utils/mori.js";
-import { parseState, readTokens } from "./utils/token.js";
-import { searchArticle } from "./utils/wikipedia.js";
+import { ddragon } from "./utils/ddragon.js";
+import { IDManager } from "./utils/mori.js";
+import { RiotAPI } from "./utils/riotapi.js";
+import { parseState, readTokens } from "./utils/spotify.js";
 
-const { TOKEN, PORT, SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, SPOTIFY_REDIRECT_URI } = process.env;
+const {
+  TOKEN,
+  PORT,
+  SPOTIFY_CLIENT_ID,
+  SPOTIFY_CLIENT_SECRET,
+  SPOTIFY_REDIRECT_URI,
+  RIOT_API_KEY,
+} = process.env;
+if (
+  !TOKEN ||
+  !PORT ||
+  !SPOTIFY_CLIENT_ID ||
+  !SPOTIFY_CLIENT_SECRET ||
+  !SPOTIFY_REDIRECT_URI ||
+  !RIOT_API_KEY
+) {
+  console.error("Required variables are not defined. Use env vars.");
+  process.exit(1);
+}
 const spotifyApi = new SpotifyWebApi({
   clientId: SPOTIFY_CLIENT_ID,
   clientSecret: SPOTIFY_CLIENT_SECRET,
   redirectUri: SPOTIFY_REDIRECT_URI,
 });
 const stateMap: stateMap = new Map();
+
+fs.mkdirSync(path.resolve("cache"), { recursive: true });
 const tokenFile = await readTokens(true);
-const moriUsers = new IDManager();
-const wikiChannels = new IDManager(path.join(process.cwd(), "wikipedia_channels.txt"));
-moriUsers.load();
-wikiChannels.load();
-export { moriUsers, spotifyApi, stateMap, tokenFile, wikiChannels };
+const moriUsers = await IDManager.init();
+const wikiChannels = await IDManager.init(path.resolve("cache", "wikipedia_channels.txt"));
+
+const riotApi = new RiotAPI(RIOT_API_KEY);
+const DataDragon = await ddragon.init();
 
 const { Guilds, GuildMessages, DirectMessages, MessageContent } = GatewayIntentBits;
 const { Channel, Message } = Partials;
@@ -37,7 +58,7 @@ for (const file of commandFiles) {
   const command: SlashCommand = await import(pathToFileURL(filePath).href);
   if ("data" in command && "execute" in command) {
     client.commands.set(command.data.name, command);
-    console.log("Successfully loaded:", command.data.name);
+    console.log("Successfully loaded command:", command.data.name);
   } else
     console.warn(`The command at ${filePath} is missing a required "data" or "execute" property.`);
 }
@@ -52,52 +73,21 @@ for (const file of eventFiles) {
   } else {
     client.on(event.name, (...args) => event.execute(...args));
   }
-  console.log("Successfully loaded:", event.name);
+  console.log("Successfully loaded event handler:", event.name);
 }
 
-client.login(TOKEN);
+const scheduleMap: Record<string, cron.ScheduledTask> = {};
 
-const scheduleMap: Record<string, cron.ScheduledTask> = {
-  //memento mori reminder
-  mori: cron.schedule(
-    "0 6,18 * * *",
-    async () => {
-      let { ids } = moriUsers;
-      for (let id of ids) {
-        let user = await client.users.fetch(id).catch(() => undefined);
-        if (!user) {
-          console.error("Failed to get user with id:", id);
-          continue;
-        }
-        await user.send(memento());
-      }
-    },
-    { timezone: "Asia/Tokyo" }
-  ),
-
-  //daily wikipedia article broadcast
-  wikipedia: cron.schedule(
-    "0 20 * * *",
-    async () => {
-      let { ids } = wikiChannels;
-      for (let id of ids) {
-        let channel = await client.channels.fetch(id).catch(() => undefined);
-        if (!channel || !("send" in channel)) {
-          console.error("Failed to get channel with id:", id);
-          continue;
-        }
-
-        let article = await searchArticle("哲学", true, 666);
-        if (!article) {
-          console.error("Failed to find an article.");
-          continue;
-        }
-        await channel.send(article);
-      }
-    },
-    { timezone: "Asia/Tokyo" }
-  ),
-};
+const schedulesPath = path.join(import.meta.dirname, "schedules"); // ./schedules
+const scheduleFiles = fs.readdirSync(schedulesPath).filter((file) => file.endsWith(".js")); // ["wikipedia.js", ...]
+for (const file of scheduleFiles) {
+  const filePath = path.join(schedulesPath, file); // ./schedules/wikipedia.js
+  const schedule: Schedule = await import(pathToFileURL(filePath).href);
+  scheduleMap[schedule.name] = cron.schedule(schedule.time, schedule.execute, {
+    timezone: schedule.timezone || "Asia/Tokyo",
+  });
+  console.log(`Successfully loaded schedule: ${schedule.name}`);
+}
 
 const app = express();
 //server response for health check and oauth2
@@ -117,10 +107,15 @@ app.get("/", async (req, res) => {
         return res.status(401).json({ status: "error", message: "Invalid state" });
 
       let data = await spotifyApi.authorizationCodeGrant(code);
-      await tokenFile.add(user_id, data.body);
+      let { access_token, refresh_token, expires_in } = data.body;
+      await tokenFile.add(user_id, {
+        access_token,
+        refresh_token,
+        expires_in: Date.now() + expires_in * 1000,
+      });
       stateMap.delete(user_id);
 
-      res.send(`<p>Done!</p><script>setTimeout(window.close, 4 * 1000); </script>`);
+      res.send(`<p>Done.</p><script>setTimeout(window.close, 2 * 1000); </script>`);
 
       let user = client.users.cache.get(user_id);
       let channel = client.channels.cache.get(channel_id);
@@ -149,8 +144,8 @@ async function shutdown(code = 0) {
         console.log("HTTP server closed.");
       });
 
-    for (const schedule of Object.values(scheduleMap)) await schedule.destroy();
-    console.log("Cron schedule destroyed.");
+    for (const schedule of Object.values(scheduleMap)) schedule.stop();
+    console.log("Cron schedule stopped.");
 
     if (client) await client.destroy();
     console.log("Discord client destroyed.");
@@ -162,6 +157,8 @@ async function shutdown(code = 0) {
     console.log("Memento mori user list saved.");
     await wikiChannels.save();
     console.log("Wikipedia channel list saved.");
+    riotApi.count.clearTimers();
+    console.log("Riot API's reset timer destroyed.")
   } catch (error) {
     console.error("Error during shutdown:", error);
     code = 1;
@@ -170,3 +167,7 @@ async function shutdown(code = 0) {
     process.exit(code);
   }
 }
+
+client.login(TOKEN);
+
+export { client, DataDragon, moriUsers, riotApi, spotifyApi, stateMap, tokenFile, wikiChannels };

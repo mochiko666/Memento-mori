@@ -2,8 +2,8 @@ import type {
   AutocompleteInteraction,
   ChatInputCommandInteraction,
   Client,
-  Collection,
   ClientEvents,
+  Collection,
   SharedSlashCommand,
   Snowflake,
 } from "discord.js";
@@ -18,6 +18,13 @@ declare global {
     name: keyof ClientEvents;
     once?: boolean;
     execute: (...args: any[]) => Promise<void>;
+  }
+
+  interface Schedule {
+    name: string;
+    time: string;
+    timezone?: string;
+    execute: () => Promise<void>;
   }
   interface ExtendedClient extends Client {
     commands: Collection<string, SlashCommand>;
@@ -40,20 +47,6 @@ declare global {
     expires_in: number;
   }
   type TokenFile = Record<Snowflake, UserTokenData>;
-
-  enum greetingOptions {
-    hi = "hi",
-    hello = "hello",
-    hey = "hey",
-    yo = "yo",
-    good_morning = "good_morning",
-    good_afternoon = "good_afternoon",
-    good_evening = "good_evening",
-    weird_hello = "weird_hello",
-    weird_yo = "weird_yo",
-    memento_mori = "memento_mori",
-    carpe_diem = "carpe_diem",
-  }
 
   interface WikipediaArticle {
     ns: number;
@@ -100,4 +93,5 @@ declare global {
       search: searchArticle[];
     };
   }
+
 }

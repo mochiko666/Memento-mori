@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node --env-file=.env dist/index.js",
+    "start": "node --env-file=.env dist/index.js",
+    "test": "node --env-file=.env dist/tests/test.js",
     "build": "tsc",
     "deploy": "git add . && git commit -m \"deploy: update\" && git push origin master",
     "register-commands": "node --env-file=.env src/register-commands.js"

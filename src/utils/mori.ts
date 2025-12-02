@@ -1,7 +1,7 @@
 import { type Snowflake } from "discord.js";
 import { promises as fs } from "fs";
 import path from "path";
-const LIST_PATH = path.join(process.cwd(), "mori_users.txt");
+const LIST_PATH = path.resolve("cache", "mori_users.txt");
 
 const messages = [
   "Memento mori.",
@@ -65,8 +65,13 @@ class IDManager {
   public get ids(): readonly Snowflake[] {
     return this.cache;
   }
+  public static async init(path: string | Buffer | URL = LIST_PATH) {
+    const instance = new IDManager(path);
+    await instance.load();
+    return instance;
+  }
   constructor(readonly path: string | Buffer | URL = LIST_PATH) {}
-  public load = async (): Promise<Snowflake[]> => (this.cache = await readList(this.path));
+  public load = async (): Promise<readonly Snowflake[]> => (this.cache = await readList(this.path));
   public save = async (): Promise<void> => await saveList(this.cache, this.path);
   public has = (id: Snowflake): boolean => this.cache.includes(id);
   public async add(id: Snowflake): Promise<void> {

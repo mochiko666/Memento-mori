@@ -7,7 +7,7 @@ import {
 
 const data = new SlashCommandBuilder()
   .setName("spotify")
-  .setDescription("Use Spotify functions.")
+  .setDescription("Use Spotify features.")
   .addSubcommandGroup((group) =>
     group
       .setName("permission")
@@ -141,7 +141,10 @@ async function execute(interaction: ChatInputCommandInteraction) {
             title: track.name,
             artists: track.artists.map((artist) => artist.name).join(", "),
             link: track.external_urls.spotify,
+            image: track.album.images.find(({ url }) => url)?.url,
           }));
+
+          let jacketURL = tracks[Math.floor(Math.random() * tracks.length)]?.image;
           let me = await spotifyApi.getMe();
           let { spotify } = me.body.external_urls;
           //discord profile
@@ -154,6 +157,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
             .setDescription(`in the ${time_range.replace("_", " ")}`)
             .setURL(spotify)
             .setThumbnail(avatar_url)
+            .setImage(jacketURL || null)
             .setColor(accentColor || "#ed86d3");
           tracks.forEach((track, i) => {
             embed.addFields({

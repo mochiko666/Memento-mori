@@ -24,7 +24,7 @@ const data = new SlashCommandBuilder()
       .setRequired(true)
   );
 
-const replyMap: Record<greetingOptions, string> = {
+const replyMap = {
   hi: "hi babe",
   hello: "hello there",
   hey: "girl i can see your body movin' and it's drivin' me crazy",
@@ -39,7 +39,7 @@ const replyMap: Record<greetingOptions, string> = {
 };
 
 async function execute(interaction: ChatInputCommandInteraction) {
-  let message = interaction.options.getString("message", true) as greetingOptions;
+  let message = interaction.options.getString("message", true) as keyof typeof replyMap;
   let rare = Math.random() > 0.966; // ~3.4% chance
   await interaction.reply(rare ? replyMap[message] : memento());
 }

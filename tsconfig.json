@@ -16,9 +16,9 @@
 
     // Other Outputs
     "sourceMap": false,
-    "declaration": true,
-    "declarationMap": true,
-    "declarationDir": "types",
+    "declaration": false,
+    "declarationMap": false,
+    // "declarationDir": "types",
 
     // Stricter Typechecking Options
     "noUncheckedIndexedAccess": true,
@@ -41,6 +41,5 @@
     "moduleDetection": "force",
     "skipLibCheck": true
   },
-  "include": ["src/**/*"],
-  "exclude": ["dist", "**/tests"]
+  "include": ["src/**/*"]
 }

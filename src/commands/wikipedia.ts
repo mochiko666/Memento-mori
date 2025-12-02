@@ -3,7 +3,7 @@ import { getRandomArticle, searchArticle } from "../utils/wikipedia.js";
 
 const data = new SlashCommandBuilder()
   .setName("wikipedia")
-  .setDescription("Use Wikipedia functions.")
+  .setDescription("Use Wikipedia features.")
   .addSubcommandGroup((group) =>
     group
       .setName("get")
