@@ -15,7 +15,10 @@ FROM node:22-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 COPY package*.json ./
-RUN npm ci --omit=dev
+ARG GITHUB_TOKEN
+RUN npm config set //npm.pkg.github.com/:_authToken=${GITHUB_TOKEN} \
+ && npm ci --omit-dev \
+ && npm config delete //npm.pkg.github.com/:_authToken
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/StarRailRes ./StarRailRes
 COPY --from=builder /app/StarRailScore ./StarRailScore
