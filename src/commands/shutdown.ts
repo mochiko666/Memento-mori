@@ -5,10 +5,17 @@ const data = new SlashCommandBuilder()
   .setDescription("Shut down the bot (admin only)");
 
 async function execute(interaction: ChatInputCommandInteraction) {
-  if (interaction.user.id === process.env.ADMIN_ID) {
+  const { ADMIN_ID } = process.env;
+  if (!ADMIN_ID) {
+    await interaction.reply(
+      "Admin id is not set, so for security, this command is being not available."
+    );
+    return;
+  }
+  if (interaction.user.id === ADMIN_ID) {
     await interaction.reply("Shutting down...");
     process.emit("beforeExit", 0);
-  } else interaction.reply("Sorry, but you do not have permission to use this command.");
+  } else await interaction.reply("Sorry, but you do not have permission to use this command.");
 }
 
 export { data, execute };

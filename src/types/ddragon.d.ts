@@ -15,8 +15,6 @@ interface withVersion {
   version: string;
 }
 
-type BaseLangs = "ja_JP" | "en_US";
-
 /**
  * Response Json fetched from Data Dragon.
  */

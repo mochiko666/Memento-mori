@@ -7,7 +7,7 @@ import {
 
 const data = new SlashCommandBuilder()
   .setName("spotify")
-  .setDescription("Use Spotify features.")
+  .setDescription("Spotify features.")
   .addSubcommandGroup((group) =>
     group
       .setName("permission")
@@ -139,12 +139,27 @@ async function execute(interaction: ChatInputCommandInteraction) {
             .body;
           let tracks = items.map((track) => ({
             title: track.name,
-            artists: track.artists.map((artist) => artist.name).join(", "),
+            artists: track.artists.map((a) => a.name).join(", "),
             link: track.external_urls.spotify,
-            image: track.album.images.find(({ url }) => url)?.url,
+            album: track.album,
           }));
 
-          let jacketURL = tracks[Math.floor(Math.random() * tracks.length)]?.image;
+          let albumInfo = {
+            info: "",
+            jacketURL: "",
+          };
+          let rand = tracks[Math.floor(Math.random() * tracks.length)];
+          if (rand) {
+            let { album } = rand;
+            let title = album.name;
+            let artists = album.artists.map((a) => a.name).join(", ");
+            let link = album.external_urls.spotify;
+            albumInfo.info = `[${title}](${link}) by ${artists} (including ${rand.title}))`;
+
+            let img = album.images.find(Boolean);
+            if (img) albumInfo.jacketURL = img.url;
+          }
+
           let me = await spotifyApi.getMe();
           let { spotify } = me.body.external_urls;
           //discord profile
@@ -157,12 +172,13 @@ async function execute(interaction: ChatInputCommandInteraction) {
             .setDescription(`in the ${time_range.replace("_", " ")}`)
             .setURL(spotify)
             .setThumbnail(avatar_url)
-            .setImage(jacketURL || null)
+            .setImage(albumInfo.jacketURL || null)
+            .setFooter({ text: albumInfo.info })
             .setColor(accentColor || "#ed86d3");
           tracks.forEach((track, i) => {
             embed.addFields({
               name: `__***${i + 1}.***__`,
-              value: `[**${track.title}**](${track.link})      by ${track.artists}`,
+              value: `[**${track.title}**](${track.link}) by ${track.artists}`,
             });
           });
           reply = { embeds: [embed] };

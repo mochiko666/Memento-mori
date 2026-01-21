@@ -1,4 +1,4 @@
-import type { RegionPlatform } from "./enums.ts";
+import type { RegionPlatform } from "../enums/riotapi.ts";
 
 interface puuid {
   puuid: string;
@@ -125,13 +125,14 @@ interface MiniSeriesDto {
 }
 
 interface LoLBattleStats {
-  position: number[];
+  position: LoLPositionRates;
   kills: number;
   deaths: number;
   assists: number;
   wins: number;
-  champions: Map<string, ChampionStats>
+  champions: Map<string, ChampionStats>;
 }
+type LoLPositionRates = [Top: number, Mid: number, Bot: number, Jun: number, Uti: number];
 
 interface ChampionStats {
   championId: number;
@@ -142,25 +143,4 @@ interface ChampionStats {
   assists: number;
 }
 
-export {
-  AccountDto,
-  BanDto,
-  ChampionMasteryDto,
-  ChampionStats,
-  InfoDto,
-  LaneStats,
-  LeagueEntryDto,
-  LoLBattleStats,
-  LoLRankedQueueType,
-  MatchDto,
-  MetadataDto,
-  MiniSeriesDto,
-  NextSeasonMilestonesDto,
-  ObjectiveDto,
-  ObjectivesDto,
-  ParticipantDto,
-  PositionStats,
-  RegionDto,
-  SummonerDto,
-  TeamDto,
-};
+type RiotUserName = `${string}#${number}`;

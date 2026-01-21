@@ -1,9 +1,14 @@
 node_modules
+StarRailRes
+StarRailScore
+cache
+logs
+.continue
 
 *.js
 *.txt
-tokens.json
+*.xcf
 .env
-test.*
+test*.*
 dist
 tests

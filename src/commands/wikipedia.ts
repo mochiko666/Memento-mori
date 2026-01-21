@@ -1,5 +1,5 @@
 import { ChannelType, SlashCommandBuilder, type ChatInputCommandInteraction } from "discord.js";
-import { getRandomArticle, searchArticle } from "../utils/wikipedia.js";
+import { getRandomArticle, searchArticle } from "../classes/wikipedia.js";
 
 const data = new SlashCommandBuilder()
   .setName("wikipedia")
@@ -104,17 +104,17 @@ async function execute(interaction: ChatInputCommandInteraction) {
               reply = "ok i got it";
             }
           } else if (wikiChannels.has(id)) {
-            await wikiChannels.delete(id);
+            await wikiChannels.filter((v) => v !== id);
             reply = "The broadcast on the channel has been disabled successfully.";
           } else reply = "The channel is not set.";
           break;
         case "list":
-          let { ids } = wikiChannels;
-          if (ids.length === 0) {
+          let { cache } = wikiChannels;
+          if (cache.length === 0) {
             reply = "No channels set for daily broadcast.";
             break;
           }
-          let list = ids.map((id) => `<#${id}>`).join("\n");
+          let list = cache.map((id) => `<#${id}>`).join("\n");
           reply = `Channels set for daily broadcast:\n${list}`;
           break;
       }

@@ -1,5 +1,5 @@
 import { type Snowflake } from "discord.js";
-import { promises as fs } from "fs";
+import { promises as fs, type PathLike } from "fs";
 import path from "path";
 import type SpotifyWebApi from "spotify-web-api-node";
 const TOKEN_PATH = path.resolve("cache", "tokens.json");
@@ -7,9 +7,9 @@ const TOKEN_PATH = path.resolve("cache", "tokens.json");
 /**
  * @param wrapped Optional. Whether to convert {@link TokenFile} to {@link TokenFileWrapper}. Default is false.
  */
-function readTokens(wrapped: true, path?: string | Buffer | URL): Promise<TokenFileWrapper>;
-function readTokens(wrapped?: false, path?: string | Buffer | URL): Promise<TokenFile>;
-async function readTokens(wrapped: boolean = false, path: string | Buffer | URL = TOKEN_PATH) {
+function readTokens(wrapped: true, path?: PathLike): Promise<TokenFileWrapper>;
+function readTokens(wrapped?: false, path?: PathLike): Promise<TokenFile>;
+async function readTokens(wrapped: boolean = false, path: PathLike = TOKEN_PATH) {
   try {
     const raw = await fs.readFile(path, "utf-8");
     const file = JSON.parse(raw);
@@ -20,7 +20,7 @@ async function readTokens(wrapped: boolean = false, path: string | Buffer | URL 
   }
 }
 
-async function saveTokens(tokens: TokenFile, path?: string | Buffer | URL): Promise<void> {
+async function saveTokens(tokens: TokenFile, path?: PathLike): Promise<void> {
   const tmpPath = path || TOKEN_PATH + ".tmp";
   await fs.writeFile(tmpPath, JSON.stringify(tokens, null, 2));
   await fs.rename(tmpPath, TOKEN_PATH);
@@ -88,13 +88,10 @@ const tokenUtils = {
 };
 
 class TokenFileWrapper {
-  public constructor(
-    tokenFile: TokenFile,
-    readonly filePath: string | Buffer | URL = TOKEN_PATH
-  ) {
+  public constructor(tokenFile: TokenFile, public readonly path: PathLike = TOKEN_PATH) {
     for (const [userId, data] of Object.entries(tokenFile)) this.set(userId, data);
   }
-  private cache = new Map<Snowflake, UserTokenDataWrapper>();
+  private readonly cache = new Map<Snowflake, UserTokenDataWrapper>();
   public get file(): TokenFile {
     const out: TokenFile = {};
     for (const [id, wrapper] of this.cache) {
@@ -103,9 +100,9 @@ class TokenFileWrapper {
     return out;
   }
   public async save(): Promise<void> {
-    const tmpPath = this.filePath + ".tmp";
+    const tmpPath = this.path + ".tmp";
     await fs.writeFile(tmpPath, JSON.stringify(this.file, null, 2));
-    await fs.rename(tmpPath, this.filePath);
+    await fs.rename(tmpPath, this.path);
   }
   private set = (userId: Snowflake, data: UserTokenData) =>
     this.cache.set(userId, new UserTokenDataWrapper(userId, data, this));

@@ -1,4 +1,5 @@
 import { Events, type Interaction } from "discord.js";
+import type { ExtendedClient } from "../types/discord.js";
 
 const name = Events.InteractionCreate;
 async function execute(interaction: Interaction) {

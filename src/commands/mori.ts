@@ -57,16 +57,16 @@ async function execute(interaction: ChatInputCommandInteraction) {
         if (enable) {
           if (user.equals(interaction.user)) await user.send(memento());
           await moriUsers.add(user.id);
-        } else await moriUsers.delete(user.id);
+        } else await moriUsers.filter((v) => v !== user.id);
       }
       break;
     case "list":
-      let { ids } = moriUsers;
-      if (ids.length === 0) {
+      let { cache } = moriUsers;
+      if (cache.length === 0) {
         reply = "No users are set for daily mori reminders.";
         break;
       }
-      let list = ids.map((id) => `<@${id}>`).join("\n");
+      let list = cache.map((id) => `<@${id}>`).join("\n");
       reply = `Users set for daily mori reminders:\n${list}`; // <@1234567890>\n<@0987654321>
       break;
     case "spam":
@@ -75,7 +75,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
 
       if (target.bot) {
         reply = "Sorry, but I cannot spam to bots.";
-        return;
+        break;
       }
 
       reply = `Spamming ${count} mori messages to ${target.toString()}...`;

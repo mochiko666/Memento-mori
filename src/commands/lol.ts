@@ -1,19 +1,20 @@
 import {
   EmbedBuilder,
   SlashCommandBuilder,
-  User,
   type APIEmbedField,
   type AutocompleteInteraction,
   type ChatInputCommandInteraction,
   type InteractionEditReplyOptions,
   type InteractionReplyOptions,
+  type User,
 } from "discord.js";
-import { RoutingRegion } from "../types/enums.js";
-import type { RiotUserData } from "../utils/riotapi.js";
+import type { RiotUserData } from "../classes/riotapi.js";
+import { RoutingRegion } from "../enums/riotapi.js";
+import { percentDisplay } from "../utils/number.js";
 
 const data = new SlashCommandBuilder()
   .setName("lol")
-  .setDescription("Use LoL features.")
+  .setDescription("LoL features.")
   .addSubcommandGroup((group) =>
     group
       .setName("me")
@@ -93,13 +94,13 @@ async function execute(interaction: ChatInputCommandInteraction) {
   let reply: string | InteractionReplyOptions = "";
   let editReply: string | InteractionEditReplyOptions = "";
 
-  let { riotApi, DataDragon } = await import("../index.js");
+  let { riotApi } = await import("../index.js");
   let { id } = interaction.user;
   let subcommand = interaction.options.getSubcommand(true);
   switch (subcommand) {
     case "register": {
       let nametag = interaction.options.getString("nametag", true);
-      if (!nametag.includes("#")) {
+      if (!riotApi.isRiotUserName(nametag)) {
         reply = { content: "Invalid Riot ID format. Expected 'name#tag'.", flags: "Ephemeral" };
         break;
       }
@@ -123,12 +124,13 @@ async function execute(interaction: ChatInputCommandInteraction) {
       let riotUser = riotApi.cache.get(id, true);
 
       let embed = await buildStatsEmbed(riotUser, update, least, interaction.user);
-      editReply = { embeds: [embed] };
+      if (embed) editReply = { embeds: [embed] };
+      else editReply = "You have never played any LoL Matches yet.";
       break;
     }
     case "find": {
       let nametag = interaction.options.getString("nametag", true);
-      if (!nametag.includes("#")) {
+      if (!riotApi.isRiotUserName(nametag)) {
         reply = { content: "Invalid Riot ID format. Expected 'name#tag'.", flags: "Ephemeral" };
         break;
       }
@@ -138,10 +140,11 @@ async function execute(interaction: ChatInputCommandInteraction) {
       let update = interaction.options.getBoolean("update") ?? false;
       let least = interaction.options.getInteger("least") || 20;
 
-      const riotUser = riotApi.cache.set(nametag, region, id);
+      let riotUser = riotApi.cache.set(nametag, region, id);
 
       let embed = await buildStatsEmbed(riotUser, update, least, interaction.user);
-      editReply = { embeds: [embed] };
+      if (embed) editReply = { embeds: [embed] };
+      else editReply = "The summoner has never played any LoL Matches yet.";
       break;
     }
   }
@@ -154,17 +157,17 @@ async function buildStatsEmbed(
   riotUser: RiotUserData,
   update: boolean,
   least: number,
-  user: User
-): Promise<EmbedBuilder> {
+  user?: User
+): Promise<EmbedBuilder | null> {
   const { DataDragon } = await import("../index.js");
   const { lol, nametag } = riotUser;
   let { profileIconId, summonerLevel } = await lol.getSummoner(update);
   let iconURL = DataDragon.imgURL("profileicon", profileIconId);
-  let { displayName, accentColor } = user;
 
   let avg = await lol.getAvgStats(update, least);
+  if (!avg) return null;
 
-  let percent = (n: number) => (n * 100).toFixed(1) + "%";
+  let percent = (n: number) => percentDisplay(n, 1) + "%";
   let avgNum = (n: number) => n.toFixed(2);
 
   let totalStats: APIEmbedField = {
@@ -194,7 +197,7 @@ async function buildStatsEmbed(
     RANKED_FLEX_TT: "TFT",
   };
   let rankedStats: APIEmbedField[] = Object.values(ranked).map((stat) => ({
-    name: queueMap[stat.queueType],
+    name: `**${queueMap[stat.queueType]}**`,
     value: [
       `Win Rate: ${percent(Math.round((stat.wins / (stat.wins + stat.losses)) * 1000) / 1000)}`,
       `Total Wins: ${stat.wins}`,
@@ -229,23 +232,26 @@ async function buildStatsEmbed(
   if (rand) skin = rand;
 
   let embed = new EmbedBuilder()
-    .setTitle(`${displayName}'s LoL Stats`)
+    .setTitle(`${user ? user.displayName : nametag}'s LoL Stats`)
     .setDescription(`Summoner Id: ${nametag}\nLevel: ${summonerLevel}`)
-    .setColor(accentColor || "#ed86d3")
+    .setColor(user ? user.accentColor || "#ed86d3" : "Random")
     .setThumbnail(iconURL)
     .addFields(userStats)
     .addFields({
-      name: "Ranked Stats",
-      value: rankedStats.length > 0 ? "" : "You have never played Ranked Matches yet.",
+      name: "**Ranked Stats**",
+      value:
+        rankedStats.length > 0
+          ? ""
+          : `${user ? "You have" : "This summoner has"} never played Ranked Matches yet.`,
     })
     .addFields(rankedStats)
     .addFields({
-      name: "Top Picked Champions",
-      value: "Your fav champs",
+      name: "**Top Picked Champions**",
+      value: "",
     })
     .addFields(champStats)
     .setImage(DataDragon.splashImgURL(top, skin.num))
-    .setFooter({ text: skin.name });
+    .setFooter({ text: `${skin.name}   © Riot Games, Inc. All Rights Reserved.` });
 
   return embed;
 }

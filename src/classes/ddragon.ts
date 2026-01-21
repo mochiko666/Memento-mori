@@ -1,31 +1,33 @@
-class ddragon {
+import { DDLangs } from "../enums/ddragon.js";
+
+class DDragon {
   public readonly cache: DDCache = { champions: {}, items: {} };
 
-  private constructor(private version: string, private lang: BaseLangs = "ja_JP") {}
+  private constructor(private version: string, public readonly lang: DDLangs | `${DDLangs}`) {}
 
   private static baseURL = "https://ddragon.leagueoflegends.com/";
-  private static async request(url: string) {
-    const res = await fetch(this.baseURL + url);
+  private static async request(component: string) {
+    const res = await fetch(this.baseURL + component);
     if (!res.ok) {
       const text = await res.text();
-      throw new Error(`API Error ${res.status}: ${text}`);
+      throw new Error(`DDragon API Error ${res.status}: ${text}`);
     }
     return res.json();
   }
 
   private static async getLatestVersion(): Promise<string> {
-    const res = await this.request("api/versions.json");
-    const [latest]: string[] = res;
+    const res: string[] = await this.request("api/versions.json");
+    const [latest] = res;
     if (!latest) throw new Error("Failed to get the latest DD version.");
     return latest;
   }
   /**
    * Creates a new instance of DDragon wrapper, with data cached.
-   * @param lang A supported language, see {@link BaseLangs}.
+   * @param lang A supported language, see {@link DDLangs}.
    */
-  public static async init(lang: BaseLangs = "ja_JP"): Promise<ddragon> {
+  public static async init(lang: DDLangs | `${DDLangs}` = DDLangs.ja_JP): Promise<DDragon> {
     const latest = await this.getLatestVersion();
-    const instance = new ddragon(latest, lang);
+    const instance = new DDragon(latest, lang);
     await instance.load(true);
     return instance;
   }
@@ -33,7 +35,7 @@ class ddragon {
     update: boolean = false
   ): Promise<[DDResponseData<ChampionData>, DDResponseData<ItemData>]> {
     if (update) {
-      const latest = await ddragon.getLatestVersion();
+      const latest = await DDragon.getLatestVersion();
       this.version = latest;
     }
     return Promise.all([this.getChampionsData(), this.getItemsData()]);
@@ -44,7 +46,7 @@ class ddragon {
    * @param champion The champion's id or key.
    * @param update Whether to return data updated or cached. Defaults to false.
    * @returns The specified champion's {@link SpecifiedChampionData},
-   *          that has more information than {@link ChampionData}
+   *          that has more information than {@link ChampionData}.
    * @example const seraphine = await DD.getChampionData("Seraphine");
    *          const seraphine = await DD.getChampionData(147);
    */
@@ -62,11 +64,11 @@ class ddragon {
       if (cache && !("version" in cache)) return cache;
     }
 
-    const res: DDResponse<SpecifiedChampionData> = await ddragon.request(
+    const res: DDResponse<SpecifiedChampionData> = await DDragon.request(
       `cdn/${this.version}/data/${this.lang}/champion/${champion}.json`
     );
     const { data } = res;
-    const result = data[champion]
+    const result = data[champion];
     if (result) {
       this.cache.champions = Object.assign(champions, data);
       return result;
@@ -74,15 +76,15 @@ class ddragon {
   }
 
   public async getChampionsData(): Promise<DDResponseData<ChampionData>> {
-    const res: DDResponse<ChampionData> = await ddragon.request(
+    const res: DDResponse<ChampionData> = await DDragon.request(
       `cdn/${this.version}/data/${this.lang}/champion.json`
     );
     const { data } = res;
     this.cache.champions = data;
     return data;
   }
-  public async getItemsData(lang: BaseLangs = "ja_JP"): Promise<DDResponseData<ItemData>> {
-    const res: DDResponse<ItemData> = await ddragon.request(
+  public async getItemsData(lang: DDLangs = DDLangs.ja_JP): Promise<DDResponseData<ItemData>> {
+    const res: DDResponse<ItemData> = await DDragon.request(
       `cdn/${this.version}/data/${lang}/item.json`
     );
     const { data } = res;
@@ -93,11 +95,11 @@ class ddragon {
   public imgURL = (
     component: "item" | "spell" | "profileicon" | "map" | "sprite" | "ui",
     id: string | number
-  ): string => ddragon.baseURL + `cdn/${this.version}/img/${component}/${id}.png`;
+  ): string => DDragon.baseURL + `cdn/${this.version}/img/${component}/${id}.png`;
   public splashImgURL = (champion: string, skin: number) =>
-    ddragon.baseURL + `cdn/img/champion/splash/${champion}_${skin}.jpg`;
+    DDragon.baseURL + `cdn/img/champion/splash/${champion}_${skin}.jpg`;
   public loadingImgURL = (champion: string, skin: number) =>
-    ddragon.baseURL + `cdn/img/champion/loading/${champion}_${skin}.jpg`;
+    DDragon.baseURL + `cdn/img/champion/loading/${champion}_${skin}.jpg`;
 }
 
 interface DDCache {
@@ -105,4 +107,4 @@ interface DDCache {
   items: DDResponseData<ItemData>;
 }
 
-export { ddragon };
+export { DDragon };

@@ -1,4 +1,5 @@
 import { Events } from "discord.js";
+import type { ExtendedClient } from "../types/discord.js";
 
 const name = Events.ClientReady;
 const once = true;

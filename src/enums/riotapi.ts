@@ -1,10 +1,10 @@
-enum RoutingRegion {
+export enum RoutingRegion {
   AMERICAS = "americas",
   ASIA = "asia",
   EUROPE = "europe",
   SEA = "sea",
 }
-enum RegionPlatform {
+export const enum RegionPlatform {
   BW1 = "bw1",
   EUN1 = "eun1",
   EUW1 = "euw1",
@@ -20,5 +20,3 @@ enum RegionPlatform {
   TW2 = "tw2",
   VN2 = "vn2",
 }
-
-export { RoutingRegion, RegionPlatform };

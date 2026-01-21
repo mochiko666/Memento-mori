@@ -1,0 +1,1 @@
+export const percentDisplay = (n: number, digits: number): string => (n * 100).toFixed(digits);

@@ -1,3 +1,4 @@
+import { ArrayFileManager } from "@mochiko666/managers";
 import { Client, Collection, GatewayIntentBits, Partials } from "discord.js";
 import express from "express";
 import fs from "fs";
@@ -5,10 +6,13 @@ import cron from "node-cron";
 import path from "path";
 import SpotifyWebApi from "spotify-web-api-node";
 import { pathToFileURL } from "url";
-import { ddragon } from "./utils/ddragon.js";
-import { IDManager } from "./utils/mori.js";
-import { RiotAPI } from "./utils/riotapi.js";
-import { parseState, readTokens } from "./utils/spotify.js";
+import { DDragon } from "./classes/ddragon.js";
+import { MihomoAPI } from "./classes/mihomo.js";
+import { RiotAPI } from "./classes/riotapi.js";
+import { parseState, readTokens } from "./classes/spotify.js";
+import { DDLangs } from "./enums/ddragon.js";
+import { MihomoLangs } from "./enums/mihomo.js";
+import type { EventHandler, ExtendedClient, Schedule, SlashCommand } from "./types/discord.js";
 
 const {
   TOKEN,
@@ -29,27 +33,33 @@ if (
   console.error("Required variables are not defined. Use env vars.");
   process.exit(1);
 }
+
+// Initialize classes
+fs.mkdirSync(path.resolve("cache"), { recursive: true });
+
+const [tokenFile, moriUsers, wikiChannels, DataDragon, MihomoApi] = await Promise.all([
+  readTokens(true),
+  ArrayFileManager.init<string>(path.resolve("cache", "mori_users.json")),
+  ArrayFileManager.init<string>(path.resolve("cache", "wikipedia_channels.json")),
+  DDragon.init(DDLangs.ja_JP),
+  MihomoAPI.init(MihomoLangs.JP),
+]);
 const spotifyApi = new SpotifyWebApi({
   clientId: SPOTIFY_CLIENT_ID,
   clientSecret: SPOTIFY_CLIENT_SECRET,
   redirectUri: SPOTIFY_REDIRECT_URI,
 });
-const stateMap: stateMap = new Map();
-
-fs.mkdirSync(path.resolve("cache"), { recursive: true });
-const tokenFile = await readTokens(true);
-const moriUsers = await IDManager.init();
-const wikiChannels = await IDManager.init(path.resolve("cache", "wikipedia_channels.txt"));
-
 const riotApi = new RiotAPI(RIOT_API_KEY);
-const DataDragon = await ddragon.init();
 
+// Initialize Discord client
 const { Guilds, GuildMessages, DirectMessages, MessageContent } = GatewayIntentBits;
 const { Channel, Message } = Partials;
 const client = new Client({
   intents: [Guilds, GuildMessages, DirectMessages, MessageContent],
   partials: [Channel, Message],
 }) as ExtendedClient;
+
+// Load commands
 client.commands = new Collection();
 const commandsPath = path.join(import.meta.dirname, "commands"); // ./commands
 const commandFiles = fs.readdirSync(commandsPath).filter((file) => file.endsWith(".js")); // ["mori.js", ...]
@@ -63,6 +73,7 @@ for (const file of commandFiles) {
     console.warn(`The command at ${filePath} is missing a required "data" or "execute" property.`);
 }
 
+// Load event handlers
 const eventsPath = path.join(import.meta.dirname, "events"); // ./events
 const eventFiles = fs.readdirSync(eventsPath).filter((file) => file.endsWith(".js")); // ["message.js", ...]
 for (const file of eventFiles) {
@@ -76,8 +87,8 @@ for (const file of eventFiles) {
   console.log("Successfully loaded event handler:", event.name);
 }
 
+// Load scheduled tasks
 const scheduleMap: Record<string, cron.ScheduledTask> = {};
-
 const schedulesPath = path.join(import.meta.dirname, "schedules"); // ./schedules
 const scheduleFiles = fs.readdirSync(schedulesPath).filter((file) => file.endsWith(".js")); // ["wikipedia.js", ...]
 for (const file of scheduleFiles) {
@@ -89,11 +100,13 @@ for (const file of scheduleFiles) {
   console.log(`Successfully loaded schedule: ${schedule.name}`);
 }
 
+const stateMap = new Map<string, AuthorizeData>();
 const app = express();
 //server response for health check and oauth2
 app.get("/", async (req, res) => {
   const { code, state } = req.query;
   if (typeof code === "string" && typeof state === "string")
+    // authorization for spotify token
     try {
       let payload = parseState(state);
       if (!payload)
@@ -158,7 +171,7 @@ async function shutdown(code = 0) {
     await wikiChannels.save();
     console.log("Wikipedia channel list saved.");
     riotApi.count.clearTimers();
-    console.log("Riot API's reset timer destroyed.")
+    console.log("Riot API's reset timer destroyed.");
   } catch (error) {
     console.error("Error during shutdown:", error);
     code = 1;
@@ -170,4 +183,14 @@ async function shutdown(code = 0) {
 
 client.login(TOKEN);
 
-export { client, DataDragon, moriUsers, riotApi, spotifyApi, stateMap, tokenFile, wikiChannels };
+export {
+  client,
+  DataDragon,
+  MihomoApi,
+  moriUsers,
+  riotApi,
+  spotifyApi,
+  stateMap,
+  tokenFile,
+  wikiChannels,
+};

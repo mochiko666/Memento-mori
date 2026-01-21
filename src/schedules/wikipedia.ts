@@ -1,4 +1,4 @@
-import { searchArticle } from "../utils/wikipedia.js";
+import { searchArticle } from "../classes/wikipedia.js";
 
 const name = "wikipedia";
 const time = "0 20 * * *"; // every day at 20:00
@@ -6,8 +6,8 @@ const time = "0 20 * * *"; // every day at 20:00
 async function execute() {
   const { client, wikiChannels } = await import("../index.js"); //avoid circular dependency
 
-  let { ids } = wikiChannels;
-  for (let id of ids) {
+  let { cache } = wikiChannels;
+  for (let id of cache) {
     let channel = await client.channels.fetch(id).catch(() => undefined);
     if (!channel || !("send" in channel)) {
       console.error("Failed to get channel with id:", id);
