@@ -20,6 +20,7 @@ ENV NODE_ENV=production
 COPY package*.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/resources ./resources
 COPY --from=builder /app/StarRailRes ./StarRailRes
 COPY --from=builder /app/StarRailScore ./StarRailScore
 EXPOSE 8000
