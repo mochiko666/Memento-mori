@@ -190,7 +190,7 @@ function buildCharacterContainer(character: MihomoCharacter) {
           .setShadow(shadow),
       (file) =>
         file
-          .setOffset(365, 30)
+          .setOffset(265, 130)
           .setSize(100, 100)
           .setPath(MihomoAPI.resourcePath(element.icon))
           .setShadow(shadow),
